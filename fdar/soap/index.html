@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FDAR・SOAP 自動記録メーカー｜SOAP版</title>
+
+  <meta name="apple-mobile-web-app-title" content="FDAR・SOAP 自動記録メーカー" />
+  <meta name="application-name" content="FDAR・SOAP 自動記録メーカー" />
+
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; margin: 18px; }
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    .subTitle { opacity: .85; font-size: 13px; margin: 0 0 14px; line-height: 1.4; }
+    .card { border: 1px solid rgba(127,127,127,.35); border-radius: 14px; padding: 14px; }
+    label { display:block; font-size: 12px; opacity: .8; margin: 10px 0 6px; }
+    input, textarea { width: 100%; box-sizing: border-box; border-radius: 12px; border: 1px solid rgba(127,127,127,.35); padding: 10px 12px; background: rgba(0,0,0,.03); }
+    textarea { min-height: 74px; resize: vertical; }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btnRow { display:flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+    button { border-radius: 14px; padding: 10px 12px; border: 1px solid rgba(127,127,127,.35); background: rgba(0,0,0,.06); cursor:pointer; }
+    button.primary { background: rgba(20,120,255,.15); border-color: rgba(20,120,255,.35); }
+    .out { margin-top: 14px; }
+    pre { white-space: pre-wrap; border-radius: 14px; padding: 12px; border: 1px solid rgba(127,127,127,.25); background: rgba(0,0,0,.04); }
+    .warn { margin-top: 10px; opacity: .85; font-size: 12px; line-height: 1.4; }
+    .badge { position: fixed; right: 16px; bottom: 70px; z-index: 9999; padding: 8px 10px; border-radius: 12px;
+             border: 1px solid rgba(127,127,127,.25); background: rgba(20,20,20,.70); color:#ddd; font-size: 12px; }
+    .micBtn { position: fixed; right: 16px; bottom: 16px; z-index: 9999; padding: 12px 14px; border-radius: 14px;
+              border: 1px solid rgba(127,127,127,.35); background: rgba(20,20,20,.92); color:#fff; font-size: 14px; }
+  </style>
+</head>
+
+<body>
+  <h1>FDAR・SOAP 自動記録メーカー（SOAP版）</h1>
+  <p class="subTitle">次の訪問先に行くまでに自動音声入力。車や自転車移動中でもできます！</p>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>利用者（イニシャル推奨）</label>
+        <input id="client" placeholder="例：A様 / KM など（個人情報は入れない運用推奨）" />
+      </div>
+      <div>
+        <label>日付</label>
+        <input id="date" placeholder="YYYY/MM/DD" />
+      </div>
+    </div>
+
+    <label>S</label>
+    <textarea id="s" placeholder="Subjective"></textarea>
+
+    <label>O</label>
+    <textarea id="o" placeholder="Objective"></textarea>
+
+    <label>A</label>
+    <textarea id="a" placeholder="Assessment"></textarea>
+
+    <label>P</label>
+    <textarea id="p" placeholder="Plan"></textarea>
+
+    <div class="btnRow">
+      <button class="primary" id="renderCopy">コード化してコピー</button>
+      <button id="clearAll">全消去</button>
+      <button id="saveLocal">この内容を保存</button>
+      <button id="loadLocal">保存を読み込み</button>
+    </div>
+
+    <div class="out">
+      <label>出力（プレビュー）</label>
+      <pre id="out"></pre>
+    </div>
+
+    <div class="warn">
+      ※個人情報（氏名・住所・電話番号など）は入力しない運用にしてください。<br>
+      ※音声入力は端末/ブラウザにより精度・安定性が異なります（Chrome推奨）。
+    </div>
+  </div>
+
+  <div class="badge" id="badge">待機中</div>
+  <button class="micBtn" id="micBtn">🎙 音声開始</button>
+
+<script>
+(() => {
+  const el = {
+    client: document.getElementById('client'),
+    date: document.getElementById('date'),
+    s: document.getElementById('s'),
+    o: document.getElementById('o'),
+    a: document.getElementById('a'),
+    p: document.getElementById('p'),
+    out: document.getElementById('out'),
+    badge: document.getElementById('badge'),
+    micBtn: document.getElementById('micBtn'),
+    renderCopy: document.getElementById('renderCopy'),
+    clearAll: document.getElementById('clearAll'),
+    saveLocal: document.getElementById('saveLocal'),
+    loadLocal: document.getElementById('loadLocal'),
+  };
+
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const today = () => {
+    const d = new Date();
+    return `${d.getFullYear()}/${pad2(d.getMonth()+1)}/${pad2(d.getDate())}`;
+  };
+
+  const speak = (msg) => {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const uttr = new SpeechSynthesisUtterance(msg);
+      uttr.lang = 'ja-JP';
+      uttr.rate = 1.05;
+      uttr.pitch = 1.0;
+      window.speechSynthesis.speak(uttr);
+    } catch {}
+  };
+
+  const keyFor = (ini) => `soap_saved_${String(ini || '').trim().toUpperCase()}`;
+  const getInitial = () => (el.client.value || '').trim();
+
+  const saveForInitial = (ini, data) => {
+    try { localStorage.setItem(keyFor(ini), JSON.stringify(data)); } catch {}
+  };
+  const loadForInitial = (ini) => {
+    try {
+      const raw = localStorage.getItem(keyFor(ini));
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch { return null; }
+  };
+
+  const snapshot = () => ({
+    client: el.client.value.trim(),
+    date: el.date.value.trim(),
+    s: el.s.value,
+    o: el.o.value,
+    a: el.a.value,
+    p: el.p.value,
+    updatedAt: Date.now(),
+  });
+
+  const fillFromSaved = (saved) => {
+    if (!saved) return;
+    if (saved.client) el.client.value = saved.client;
+    if (saved.date) el.date.value = saved.date;
+    el.s.value = saved.s || '';
+    el.o.value = saved.o || '';
+    el.a.value = saved.a || '';
+    el.p.value = saved.p || '';
+  };
+
+  const renderText = () => {
+    const client = (el.client.value || '').trim();
+    const date = (el.date.value || '').trim();
+    const S = (el.s.value || '').trim();
+    const O = (el.o.value || '').trim();
+    const A = (el.a.value || '').trim();
+    const P = (el.p.value || '').trim();
+
+    return [
+      `# SOAP`,
+      date ? `\n${date}` : ``,
+      client ? `\n\n【${client}】` : ``,
+      `\n\n## S\n${S || '（未入力）'}`,
+      `\n\n## O\n${O || '（未入力）'}`,
+      `\n\n## A\n${A || '（未入力）'}`,
+      `\n\n## P\n${P || '（未入力）'}`,
+      `\n`
+    ].join('');
+  };
+
+  const renderAndCopy = async () => {
+    const text = renderText();
+    el.out.textContent = text;
+
+    const ini = getInitial();
+    if (ini) saveForInitial(ini, snapshot());
+
+    try {
+      await navigator.clipboard.writeText(text);
+      el.badge.textContent = 'コピーしました';
+      speak('コピーしました');
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      el.badge.textContent = 'コピーしました';
+      speak('コピーしました');
+    }
+  };
+
+  el.renderCopy.addEventListener('click', renderAndCopy);
+
+  el.clearAll.addEventListener('click', () => {
+    el.s.value = ''; el.o.value=''; el.a.value=''; el.p.value='';
+    el.out.textContent = '';
+    el.badge.textContent = 'クリアしました';
+    speak('クリアしました');
+  });
+
+  el.saveLocal.addEventListener('click', () => {
+    const ini = getInitial();
+    if (!ini) { alert('利用者（イニシャル）を入力してください'); return; }
+    saveForInitial(ini, snapshot());
+    el.badge.textContent = '保存しました';
+    speak('保存しました');
+  });
+
+  el.loadLocal.addEventListener('click', () => {
+    const ini = getInitial();
+    if (!ini) { alert('利用者（イニシャル）を入力してください'); return; }
+    const saved = loadForInitial(ini);
+    if (!saved) { alert('保存がありません'); return; }
+    fillFromSaved(saved);
+    el.badge.textContent = '読み込みました';
+    speak('読み込みました');
+  });
+
+  const MODE = { IDLE:'idle', NAME:'name', S:'s', O:'o', A:'a', P:'p' };
+  let mode = MODE.IDLE;
+
+  const setMode = (m) => {
+    mode = m;
+    const labelMap = {
+      [MODE.IDLE]: '待機中',
+      [MODE.NAME]: '入力：利用者名（イニシャル）',
+      [MODE.S]: '入力：S',
+      [MODE.O]: '入力：O',
+      [MODE.A]: '入力：A',
+      [MODE.P]: '入力：P',
+    };
+    const label = labelMap[m] || '待機中';
+    el.badge.textContent = label;
+    speak(label);
+  };
+  setMode(MODE.IDLE);
+
+  const norm = (s) => (s || '')
+    .trim()
+    .replace(/[！!。．\.]/g,'')
+    .replace(/[、，]/g,' ')
+    .replace(/\s+/g,' ')
+    .toLowerCase();
+
+  const includesAny = (t, arr) => arr.some(w => t.includes(w));
+
+  const isStart = (t) => includesAny(t, ['開始','スタート','はじめ','スタートする','開始する']);
+  const isEnd   = (t) => includesAny(t, ['終わり','おわり','終了','しゅうりょう','完了']);
+  const isSame  = (t) => includesAny(t, ['全部変わりなし','ぜんぶかわりなし','全部同じ','前回と同じ','全て同じ','変わりなし']);
+
+  const wantS = (t) => includesAny(t, ['s','えす','エス','えすいこう','主観','しゅかん']);
+  const wantO = (t) => includesAny(t, ['o','おー','オー','客観','きゃっかん']);
+  const wantA = (t) => includesAny(t, ['a','えー','エー','評価','ひょうか','あせす','アセス']);
+  const wantP = (t) => includesAny(t, ['p','ぴー','ピー','計画','けいかく','ぷらん','プラン']);
+
+  const isNext = (t) => includesAny(t, ['次','つぎ','確定','かくてい','ok','オッケー','了解','りょうかい']);
+
+  const nextMode = (m) => {
+    if (m === MODE.S) return MODE.O;
+    if (m === MODE.O) return MODE.A;
+    if (m === MODE.A) return MODE.P;
+    if (m === MODE.P) return MODE.IDLE;
+    return m;
+  };
+
+  const append = (targetEl, rawText) => {
+    const text = (rawText || '').trim();
+    if (!text) return;
+    if (['次','つぎ','確定','かくてい','ok','オッケー','終わり','おわり','終了','しゅうりょう'].includes(text)) return;
+
+    if (targetEl.value && !targetEl.value.endsWith('\n')) targetEl.value += '\n';
+    targetEl.value += text;
+  };
+
+  const applySameAsSaved = () => {
+    const ini = getInitial();
+    if (!ini) { speak('利用者名が未入力です'); return; }
+    const saved = loadForInitial(ini);
+    if (!saved) { speak('保存がありません'); return; }
+
+    el.date.value = today();
+    fillFromSaved(saved);
+    el.date.value = today();
+    renderAndCopy();
+    setMode(MODE.IDLE);
+  };
+
+  const onNameSpoken = (raw) => {
+    const name = (raw || '').trim();
+    if (!name) return;
+    el.client.value = name;
+    el.date.value = today();
+
+    const saved = loadForInitial(name);
+    if (saved) fillFromSaved(saved);
+
+    setMode(MODE.S);
+  };
+
+  const handleText = (raw) => {
+    const t = norm(raw);
+    if (!t) return;
+
+    if (isStart(t)) { setMode(MODE.NAME); return; }
+    if (isSame(t))  { applySameAsSaved(); return; }
+
+    if (isEnd(t)) {
+      const missing = [];
+      if (!el.s.value.trim()) missing.push('S');
+      if (!el.o.value.trim()) missing.push('O');
+      if (!el.a.value.trim()) missing.push('A');
+      if (!el.p.value.trim()) missing.push('P');
+
+      if (missing.length) {
+        const msg = `${missing.join('・')}が未入力です`;
+        el.badge.textContent = msg;
+        speak(msg);
+        return;
+      }
+
+      renderAndCopy();
+      setMode(MODE.IDLE);
+      return;
+    }
+
+    if (wantS(t)) { setMode(MODE.S); return; }
+    if (wantO(t)) { setMode(MODE.O); return; }
+    if (wantA(t)) { setMode(MODE.A); return; }
+    if (wantP(t)) { setMode(MODE.P); return; }
+
+    if (mode === MODE.NAME) { onNameSpoken(raw); return; }
+
+    if (mode === MODE.S) { append(el.s, raw); if (isNext(t)) setMode(nextMode(mode)); return; }
+    if (mode === MODE.O) { append(el.o, raw); if (isNext(t)) setMode(nextMode(mode)); return; }
+    if (mode === MODE.A) { append(el.a, raw); if (isNext(t)) setMode(nextMode(mode)); return; }
+    if (mode === MODE.P) { append(el.p, raw); if (isNext(t)) setMode(nextMode(mode)); return; }
+  };
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null;
+  let listening = false;
+
+  const startRec = () => {
+    if (!SR) { alert('この端末/ブラウザでは音声認識が使えない可能性があります（Chrome推奨）'); return; }
+    rec = new SR();
+    rec.lang = 'ja-JP';
+    rec.interimResults = false;
+    rec.continuous = true;
+
+    rec.onresult = (e) => {
+      const last = e.results[e.results.length - 1];
+      const text = last && last[0] ? last[0].transcript : '';
+      if (text) handleText(text);
+    };
+
+    rec.onend = () => {
+      if (listening) { try { rec.start(); } catch {} }
+    };
+
+    try { rec.start(); } catch {}
+  };
+
+  const stopRec = () => {
+    try { if (rec) rec.stop(); } catch {}
+    rec = null;
+  };
+
+  el.micBtn.addEventListener('click', () => {
+    listening = !listening;
+    el.micBtn.textContent = listening ? '■ 音声停止' : '🎙 音声開始';
+    if (listening) { startRec(); speak('音声入力を開始しました'); }
+    else { stopRec(); speak('音声入力を停止しました'); }
+  });
+
+  el.date.value = today();
+})();
+</script>
+</body>
+</html>
