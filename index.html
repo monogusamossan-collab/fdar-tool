@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FDARコピペツール（軽量版）</title>
+
+  <style>
+    :root{color-scheme:light dark;}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;
+      margin:12px;
+      line-height:1.5;
+    }
+    h1{font-size:20px;margin:0 0 12px}
+    .card{border:1px solid rgba(127,127,127,.35);border-radius:14px;padding:12px}
+    label{display:block;font-size:12px;opacity:.85;margin:10px 0 6px}
+    input,textarea,select{
+      width:100%; box-sizing:border-box;
+      border:1px solid rgba(127,127,127,.35);
+      border-radius:12px;
+      padding:10px 12px;
+      background:transparent;
+      color:inherit;
+      font-size:16px;
+    }
+    textarea{min-height:90px;resize:vertical}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .row>*{flex:1 1 160px}
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    button{
+      border:1px solid rgba(127,127,127,.35);
+      border-radius:14px;
+      padding:10px 14px;
+      background:transparent;
+      color:inherit;
+      font-size:16px;
+      cursor:pointer;
+    }
+    button.primary{background:rgba(0,122,255,.18);border-color:rgba(0,122,255,.55)}
+    pre{
+      white-space:pre-wrap;
+      border:1px dashed rgba(127,127,127,.45);
+      border-radius:12px;
+      padding:10px 12px;
+      margin:12px 0 0;
+      font-size:14px;
+    }
+    .tiny{font-size:12px;opacity:.75;margin-top:8px}
+
+    /* ===== 🎤ボタン用 ===== */
+    .voice-wrap{ position:relative; }
+    .voice-btn{
+      position:absolute; right:10px; top:10px;
+      border:1px solid rgba(127,127,127,.35);
+      background:transparent; color:inherit;
+      border-radius:10px; padding:6px 10px;
+      font-size:14px; cursor:pointer;
+      user-select:none;
+    }
+    .voice-btn[disabled]{ opacity:.4; cursor:not-allowed; }
+    .voice-btn.recording{ outline:2px solid rgba(0,122,255,.7); }
+  </style>
+</head>
+
+<body>
+  <h1>FDARコピペツール（軽量版）</h1>
+
+  <div class="card">
+    <div class="row">
+      <div class="voice-wrap">
+        <label for="name">利用者名</label>
+        <input id="name" type="text" placeholder="例：〇〇〇〇 様" />
+      </div>
+
+      <div class="voice-wrap">
+        <label for="date">日付</label>
+        <input id="date" type="text" placeholder="例：2026/02/07" />
+      </div>
+    </div>
+
+    <div class="voice-wrap">
+      <label for="f">F（訴え・状況）</label>
+      <textarea id="f" placeholder="例：本日も腰痛あり。歩行時に痛み増強。"></textarea>
+    </div>
+
+    <div class="voice-wrap">
+      <label for="d">D（評価・所見）</label>
+      <textarea id="d" placeholder="例：立位で疼痛NRS◯/10。体幹伸展で増悪。"></textarea>
+    </div>
+
+    <div class="voice-wrap">
+      <label for="a">A（対応・介入）</label>
+      <textarea id="a" placeholder="例：体幹安定化練習、動作指導、疼痛緩和目的の徒手。"></textarea>
+    </div>
+
+    <div class="voice-wrap">
+      <label for="r">R（反応・結果）</label>
+      <textarea id="r" placeholder="例：介入後、立位時痛み軽減。歩行距離が伸びた。"></textarea>
+    </div>
+
+    <div class="btns">
+      <button class="primary" id="make">作成</button>
+      <button id="copy">コピー</button>
+      <button id="clear">クリア</button>
+    </div>
+
+    <pre id="out"></pre>
+
+    <div class="tiny">※「作成」→「コピー」でそのまま記録に貼れます</div>
+  </div>
+
+  <script>
+    // ===== 生成（FDAR） =====
+    const $ = (id) => document.getElementById(id);
+
+    function makeText(){
+      const name = $("name").value.trim();
+      const date = $("date").value.trim();
+      const f = $("f").value.trim();
+      const d = $("d").value.trim();
+      const a = $("a").value.trim();
+      const r = $("r").value.trim();
+
+      const lines = [];
+      if (name || date) {
+        lines.push(`【利用者】${name || "—"}　【日付】${date || "—"}`);
+      }
+      lines.push("");
+      lines.push("F：");
+      lines.push(f || "—");
+      lines.push("");
+      lines.push("D：");
+      lines.push(d || "—");
+      lines.push("");
+      lines.push("A：");
+      lines.push(a || "—");
+      lines.push("");
+      lines.push("R：");
+      lines.push(r || "—");
+
+      return lines.join("\n");
+    }
+
+    $("make").addEventListener("click", () => {
+      $("out").textContent = makeText();
+    });
+
+    $("copy").addEventListener("click", async () => {
+      const text = $("out").textContent.trim() ? $("out").textContent : makeText();
+      $("out").textContent = text;
+
+      try {
+        await navigator.clipboard.writeText(text);
+        alert("コピーしました。");
+      } catch (e) {
+        // クリップボードAPIが不可の環境向けフォールバック
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        alert("コピーしました。");
+      }
+    });
+
+    $("clear").addEventListener("click", () => {
+      ["name","date","f","d","a","r"].forEach(id => $(id).value = "");
+      $("out").textContent = "";
+    });
+
+    // ===== 🎤 音声入力（Web Speech API） =====
+    (() => {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const supported = !!SpeechRecognition;
+
+      // 対象フィールド（このHTMLは id が揃っているのでそのまま）
+      const targets = ["name","date","f","d","a","r"];
+
+      // 🎤ボタンを各 voice-wrap に付与
+      targets.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const wrap = el.closest(".voice-wrap");
+        if (!wrap) return;
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "voice-btn";
+        btn.textContent = supported ? "🎤" : "🎤×";
+        btn.title = supported ? "音声入力" : "このブラウザは音声認識未対応";
+        btn.disabled = !supported;
+        btn.dataset.targetId = id;
+        wrap.appendChild(btn);
+      });
+
+      if (!supported) return;
+
+      const rec = new SpeechRecognition();
+      rec.lang = "ja-JP";
+      rec.interimResults = true;
+      rec.continuous = true;
+
+      let currentEl = null;
+      let currentBtn = null;
+      let finalText = "";
+
+      const stop = () => {
+        try { rec.stop(); } catch(e) {}
+        if (currentBtn) currentBtn.classList.remove("recording");
+        currentEl = null;
+        currentBtn = null;
+        finalText = "";
+      };
+
+      rec.onresult = (e) => {
+        if (!currentEl) return;
+
+        let interim = "";
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const txt = e.results[i][0].transcript;
+          if (e.results[i].isFinal) finalText += txt;
+          else interim += txt;
+        }
+        currentEl.value = (finalText || "") + (interim || "");
+      };
+
+      rec.onerror = () => {
+        stop();
+        alert("音声入力が開始できませんでした。ブラウザのマイク許可を確認してください。");
+      };
+
+      rec.onend = () => {
+        if (currentBtn) currentBtn.classList.remove("recording");
+        currentEl = null;
+        currentBtn = null;
+        finalText = "";
+      };
+
+      document.addEventListener("click", (ev) => {
+        const btn = ev.target.closest(".voice-btn");
+        if (!btn) return;
+
+        const id = btn.dataset.targetId;
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        if (currentBtn && currentBtn !== btn) stop();
+
+        if (btn.classList.contains("recording")) {
+          stop();
+          return;
+        }
+
+        currentEl = el;
+        currentBtn = btn;
+        finalText = (el.value || "") + ((el.value && !el.value.endsWith(" ")) ? " " : "");
+        btn.classList.add("recording");
+
+        try {
+          rec.start();
+        } catch (e) {
+          try { rec.stop(); } catch(_) {}
+          setTimeout(() => { try { rec.start(); } catch(_) {} }, 150);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
