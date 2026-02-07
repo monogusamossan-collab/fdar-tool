@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDARコピペツール（音声対応）</title>
+
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #111;
+  color: #fff;
+  margin: 16px;
+}
+
+h1 {
+  font-size: 22px;
+  margin-bottom: 12px;
+}
+
+label {
+  display: block;
+  margin-top: 12px;
+  font-weight: bold;
+}
+
+input, textarea {
+  width: 100%;
+  background: #222;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 16px;
+}
+
+textarea {
+  min-height: 80px;
+}
+
+button {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.primary {
+  background: #0a84ff;
+  color: #fff;
+}
+
+.secondary {
+  background: #333;
+  color: #fff;
+}
+
+#output {
+  margin-top: 16px;
+  white-space: pre-wrap;
+  border: 1px dashed #555;
+  padding: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>FDARコピペツール（音声対応）</h1>
+
+<label>利用者名</label>
+<input id="name">
+
+<label>日付</label>
+<input id="date">
+
+<label>F（訴え・状況）</label>
+<textarea id="f"></textarea>
+<button onclick="voice('f')">🎤 音声入力</button>
+
+<label>D（評価・所見）</label>
+<textarea id="d"></textarea>
+<button onclick="voice('d')">🎤 音声入力</button>
+
+<label>A（対応・介入）</label>
+<textarea id="a"></textarea>
+<button onclick="voice('a')">🎤 音声入力</button>
+
+<label>R（反応・結果）</label>
+<textarea id="r"></textarea>
+<button onclick="voice('r')">🎤 音声入力</button>
+
+<br>
+
+<button class="primary" onclick="make()">作成</button>
+<button class="secondary" onclick="copy()">コピー</button>
+<button class="secondary" onclick="clearAll()">クリア</button>
+
+<div id="output"></div>
+
+<script>
+let rec;
+
+function voice(id){
+  if(!('webkitSpeechRecognition' in window)){
+    alert("このブラウザは音声入力に対応していません");
+    return;
+  }
+
+  rec = new webkitSpeechRecognition();
+  rec.lang = "ja-JP";
+  rec.continuous = false;
+  rec.interimResults = false;
+
+  rec.onresult = e => {
+    document.getElementById(id).value += e.results[0][0].transcript;
+  };
+
+  rec.start();
+}
+
+function make(){
+  const t =
+`【利用者】${name.value}
+【日付】${date.value}
+
+F：${f.value}
+
+D：${d.value}
+
+A：${a.value}
+
+R：${r.value}`;
+
+  output.textContent = t;
+}
+
+function copy(){
+  navigator.clipboard.writeText(output.textContent);
+  alert("コピーしました");
+}
+
+function clearAll(){
+  name.value="";
+  date.value="";
+  f.value="";
+  d.value="";
+  a.value="";
+  r.value="";
+  output.textContent="";
+}
+</script>
+
+</body>
+</html>
