@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>FDAR・SOAP 自動記録メーカー｜SOAP版</title>
+  <meta name="apple-mobile-web-app-title" content="SOAP 自動記録" />
+  <meta name="application-name" content="SOAP 自動記録" />
+
+  <!-- いま root に icon-512.png がある想定。もし違うなら「実在するファイル名」に合わせてください -->
+  <link rel="icon" href="../icon-512.png">
+  <link rel="apple-touch-icon" href="../icon-512.png">
+
+  <style>
+    :root { color-scheme: light dark; }
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+      margin:0; padding:18px;
+      max-width:860px;
+      line-height:1.45;
+    }
+    h1{ font-size:20px; margin:0 0 6px; }
+    .subTitle{ opacity:.85; font-size:13px; margin:0 0 16px; }
+    .card{
+      border:1px solid rgba(127,127,127,.30);
+      border-radius:16px;
+      padding:14px;
+      margin:12px 0;
+      background:rgba(127,127,127,.06);
+    }
+    label{ display:block; font-size:12px; opacity:.85; margin:10px 0 6px; }
+    input, textarea{
+      width:100%;
+      box-sizing:border-box;
+      border:1px solid rgba(127,127,127,.35);
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:15px;
+      background:rgba(20,20,20,.04);
+    }
+    textarea{ min-height:84px; resize:vertical; }
+    .row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    @media (max-width:640px){ .row{ grid-template-columns:1fr; } }
+
+    .btnRow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    button{
+      border:1px solid rgba(127,127,127,.35);
+      background:rgba(20,20,20,.06);
+      padding:10px 12px;
+      border-radius:14px;
+      font-size:14px;
+    }
+    .out{
+      width:100%;
+      min-height:140px;
+      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      margin-top:12px;
+    }
+    .note{ font-size:12px; opacity:.8; margin-top:10px; }
+    .warn{ font-size:12px; opacity:.85; }
+    a{ color:inherit; }
+  </style>
+</head>
+
+<body>
+  <h1>SOAP 自動記録メーカー</h1>
+  <p class="subTitle">音声で「スタート → イニシャル → S → O → A → P → 終わり」で入力し、ワンタッチでコード化＆コピーします。</p>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>利用者（イニシャル）</label>
+        <input id="client" placeholder="例：A様 / KM など（個人が特定できる情報は入力しない運用推奨）" />
+      </div>
+      <div>
+        <label>日付</label>
+        <input id="date" type="date" />
+      </div>
+    </div>
+
+    <label>S（主観）</label>
+    <textarea id="s" placeholder="例：本人訴え、痛み、体調、希望 など"></textarea>
+
+    <label>O（客観）</label>
+    <textarea id="o" placeholder="例：バイタル、所見、動作、観察 など"></textarea>
+
+    <label>A（評価）</label>
+    <textarea id="a" placeholder="例：解釈、問題点、要因、リスク など"></textarea>
+
+    <label>P（計画）</label>
+    <textarea id="p" placeholder="例：実施内容、次回方針、指導 など"></textarea>
+
+    <div class="btnRow">
+      <button id="render">コード化</button>
+      <button id="copy">コード化＆コピー</button>
+      <button id="clear">クリア</button>
+    </div>
+
+    <textarea id="out" class="out" placeholder="ここにコードが出力されます" readonly></textarea>
+
+    <p class="note">※個人情報（氏名・住所・電話番号など）は入力しない運用にしてください。端末内保存（localStorage）です。</p>
+  </div>
+
+  <p class="warn">
+    音声入力は iPhone Safari だと「ボタンを押した直後のみ」安定します。反応しない場合は「音声開始」を押し直してください。
+  </p>
+
+<script>
+(() => {
+  const el = {
+    client: document.getElementById('client'),
+    date: document.getElementById('date'),
+    s: document.getElementById('s'),
+    o: document.getElementById('o'),
+    a: document.getElementById('a'),
+    p: document.getElementById('p'),
+    out: document.getElementById('out'),
+    renderBtn: document.getElementById('render'),
+    copyBtn: document.getElementById('copy'),
+    clearBtn: document.getElementById('clear'),
+  };
+
+  const today = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+  if (!el.date.value) el.date.value = today();
+
+  // 端末内保存：イニシャル単位（例: KM）
+  const keyFor = (ini) => `soap_saved_${ini}`;
+  const getInitial = () => (el.client.value || '').trim().toUpperCase();
+
+  const saveForInitial = () => {
+    const ini = getInitial();
+    if (!ini) return;
+    const data = {
+      client: ini,
+      s: el.s.value || '',
+      o: el.o.value || '',
+      a: el.a.value || '',
+      p: el.p.value || '',
+      updatedAt: Date.now(),
+    };
+    localStorage.setItem(keyFor(ini), JSON.stringify(data));
+  };
+
+  const loadForInitial = (ini) => {
+    try {
+      const raw = localStorage.getItem(keyFor(ini));
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch { return null; }
+  };
+
+  const fillFromSaved = (saved) => {
+    if (!saved) return;
+    el.client.value = saved.client || el.client.value;
+    el.s.value = saved.s || '';
+    el.o.value = saved.o || '';
+    el.a.value = saved.a || '';
+    el.p.value = saved.p || '';
+  };
+
+  const makeText = () => {
+    const client = (el.client.value || '').trim();
+    const date = (el.date.value || '').trim();
+    const S = (el.s.value || '').trim();
+    const O = (el.o.value || '').trim();
+    const A = (el.a.value || '').trim();
+    const P = (el.p.value || '').trim();
+
+    // note等に貼りやすい最小構成（必要ならここを好きに変えてOK）
+    return [
+      `【SOAP】${client ? ` ${client}` : ''}${date ? `（${date}）` : ''}`,
+      '',
+      `S：${S}`,
+      `O：${O}`,
+      `A：${A}`,
+      `P：${P}`,
+    ].join('\n');
+  };
+
+  const render = () => {
+    el.out.value = makeText();
+    saveForInitial();
+  };
+
+  const renderAndCopy = async () => {
+    render();
+    const text = el.out.value;
+    try {
+      await navigator.clipboard.writeText(text);
+      const old = el.copyBtn.textContent;
+      el.copyBtn.textContent = 'コピー完了';
+      setTimeout(() => (el.copyBtn.textContent = old), 1200);
+    } catch {
+      el.out.focus(); el.out.select();
+      document.execCommand('copy');
+    }
+  };
+
+  el.renderBtn.addEventListener('click', render);
+  el.copyBtn.addEventListener('click', renderAndCopy);
+  el.clearBtn.addEventListener('click', () => {
+    el.s.value = '';
+    el.o.value = '';
+    el.a.value = '';
+    el.p.value = '';
+    el.out.value = '';
+  });
+
+  // ===== 音声コマンド（状態遷移）=====
+  // 「スタート/はじめ/開始」 → 利用者イニシャル入力モード
+  // 「S/O/A/P」 → その欄に入力
+  // 「終わり/おわり/終了」 → コード化＆コピー
+  // 「全部変わりなし/ぜんぶかわりなし」 → 前回保存を読み込み、日付を今日にしてコード化＆コピー
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  // 既に作られていたら二重生成しない（崩れ防止）
+  if (!document.getElementById('micBtn')) {
+    const micBtn = document.createElement('button');
+    micBtn.id = 'micBtn';
+    micBtn.type = 'button';
+    micBtn.textContent = '🎙 音声開始';
+    micBtn.style.cssText = `
+      position:fixed; right:16px; bottom:16px; z-index:99999;
+      padding:12px 14px; border-radius:14px;
+      border:1px solid rgba(127,127,127,.35);
+      background:rgba(20,20,20,.92); color:#fff; font-size:14px;
+    `;
+    document.body.appendChild(micBtn);
+
+    const badge = document.createElement('div');
+    badge.id = 'micBadge';
+    badge.textContent = '待機中';
+    badge.style.cssText = `
+      position:fixed; right:16px; bottom:64px; z-index:99999;
+      padding:8px 10px; border-radius:12px;
+      border:1px solid rgba(127,127,127,.25);
+      background:rgba(20,20,20,.70); color:#ddd; font-size:12px;
+    `;
+    document.body.appendChild(badge);
+
+    const MODE = { IDLE:'idle', NAME:'name', S:'s', O:'o', A:'a', P:'p' };
+    let mode = MODE.IDLE;
+
+    const setMode = (m) => {
+      mode = m;
+      const label = {
+        [MODE.IDLE]:'待機中',
+        [MODE.NAME]:'入力：イニシャル',
+        [MODE.S]:'入力：S',
+        [MODE.O]:'入力：O',
+        [MODE.A]:'入力：A',
+        [MODE.P]:'入力：P',
+      }[m] || '待機中';
+      badge.textContent = label;
+    };
+    setMode(MODE.IDLE);
+
+    const norm = (s) => (s || '')
+      .trim()
+      .replace(/[！!。、．，]/g,'')
+      .replace(/[ 　\s]+/g,' ')
+      .toLowerCase();
+
+    const isStart = (t) => ['スタート','はじめ','開始'].some(w => t.includes(w));
+    const isEnd = (t) => ['終わり','おわり','終了','しゅうりょう'].some(w => t.includes(w));
+    const isSame = (t) => ['全部変わりなし','ぜんぶかわりなし','全て変わりなし','すべてかわりなし'].some(w => t.includes(w));
+
+    const wantS = (t) => ['s','えす','エス'].some(w => t.includes(w));
+    const wantO = (t) => ['o','おー','オー','お'].some(w => t === w || t.includes('おー') || t.includes('オー'));
+    const wantA = (t) => ['a','えー','エー','あ'].some(w => t === w || t.includes('えー') || t.includes('エー'));
+    const wantP = (t) => ['p','ぴー','ピー'].some(w => t.includes(w));
+
+    const append = (targetEl, text) => {
+      const cur = targetEl.value || '';
+      const add = (text || '').trim();
+      if (!add) return;
+      targetEl.value = cur ? (cur + '\n' + add) : add;
+    };
+
+    const applySameAsSaved = () => {
+      const ini = getInitial();
+      if (!ini) return;
+      const saved = loadForInitial(ini);
+      if (!saved) return;
+      el.date.value = today();     // 日付は今日
+      fillFromSaved(saved);        // 前回を入れる
+      renderAndCopy();             // 出力＆コピー（保存も更新）
+      setMode(MODE.IDLE);
+    };
+
+    const onInitialSpoken = (raw) => {
+      const ini = (raw || '').trim().toUpperCase();
+      if (!ini) return;
+      el.client.value = ini;
+      el.date.value = today();
+
+      const saved = loadForInitial(ini);
+      if (saved) fillFromSaved(saved);
+
+      setMode(MODE.S);
+    };
+
+    const handleText = (raw) => {
+      const t = norm(raw);
+
+      if (isStart(t)) { setMode(MODE.NAME); return; }
+      if (isSame(t))  { applySameAsSaved(); return; }
+      if (isEnd(t))   { renderAndCopy(); setMode(MODE.IDLE); return; }
+
+      if (wantS(t)) { setMode(MODE.S); return; }
+      if (wantO(t)) { setMode(MODE.O); return; }
+      if (wantA(t)) { setMode(MODE.A); return; }
+      if (wantP(t)) { setMode(MODE.P); return; }
+
+      if (mode === MODE.NAME) { onInitialSpoken(raw); return; }
+      if (mode === MODE.S) { append(el.s, raw); return; }
+      if (mode === MODE.O) { append(el.o, raw); return; }
+      if (mode === MODE.A) { append(el.a, raw); return; }
+      if (mode === MODE.P) { append(el.p, raw); return; }
+      // 待機中の誤爆は無視
+    };
+
+    let rec = null;
+    let listening = false;
+
+    const startRec = () => {
+      if (!SpeechRecognition) {
+        alert('この端末/ブラウザではブラウザ音声認識が使えない可能性があります。');
+        return;
+      }
+      rec = new SpeechRecognition();
+      rec.lang = 'ja-JP';
+      rec.interimResults = false;
+      rec.continuous = true;
+
+      rec.onresult = (e) => {
+        const last = e.results[e.results.length - 1];
+        const text = last && last[0] ? last[0].transcript : '';
+        if (text) handleText(text);
+      };
+
+      rec.onend = () => {
+        // iOSで止まりやすいので再開を試す
+        if (listening) { try { rec.start(); } catch {} }
+      };
+
+      try { rec.start(); } catch {}
+    };
+
+    const stopRec = () => {
+      if (!rec) return;
+      try { rec.stop(); } catch {}
+      rec = null;
+    };
+
+    micBtn.addEventListener('click', () => {
+      listening = !listening;
+      micBtn.textContent = listening ? '🛑 音声停止' : '🎙 音声開始';
+      if (listening) startRec();
+      else stopRec();
+    });
+  }
+})();
+</script>
+</body>
+</html>
