@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FDAR記録支援ツール</title>
+
+  <style>
+    :root { color-scheme: light dark; }
+    body{
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
+      margin: 12px;
+      line-height: 1.5;
+    }
+    h1{ font-size: 20px; margin: 0 0 12px; }
+    .card{
+      border: 1px solid rgba(127,127,127,.35);
+      border-radius: 14px;
+      padding: 12px;
+      margin: 0 0 12px;
+    }
+    label{
+      display:block;
+      font-size: 12px;
+      opacity: .85;
+      margin: 10px 0 6px;
+    }
+    input, textarea{
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid rgba(127,127,127,.35);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: transparent;
+      color: inherit;
+      font-size: 16px;
+      outline: none;
+    }
+    textarea{ min-height: 92px; resize: vertical; }
+    .row{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .row > div{ flex: 1 1 160px; min-width: 160px; }
+
+    .field-with-btn{
+      position: relative;
+    }
+    .iconbtn{
+      position:absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 1px solid rgba(127,127,127,.35);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(127,127,127,.08);
+      color: inherit;
+      font-size: 14px;
+      line-height: 1;
+    }
+    textarea + .iconbtn{
+      top: 12px;
+      transform: none;
+    }
+    .iconbtn:active{ transform: translateY(-50%) scale(0.98); }
+    textarea + .iconbtn:active{ transform: scale(0.98); }
+
+    .btns{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    button{
+      border: 1px solid rgba(127,127,127,.35);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 16px;
+      background: rgba(127,127,127,.10);
+      color: inherit;
+    }
+    button.primary{
+      background: #0b66ff;
+      border-color: #0b66ff;
+      color: white;
+    }
+    pre{
+      margin: 10px 0 0;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px dashed rgba(127,127,127,.45);
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 64px;
+    }
+    .help{
+      font-size: 12px;
+      opacity: .8;
+      margin-top: 8px;
+    }
+    .warn{
+      font-size: 12px;
+      opacity: .85;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>FDAR記録支援ツール</h1>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label for="name">利用者名</label>
+        <div class="field-with-btn">
+          <input id="name" type="text" placeholder="例：〇〇〇〇 様" autocomplete="off" />
+          <button class="iconbtn" type="button" data-act="mic" data-target="name" aria-label="利用者名を音声入力">🎤</button>
+        </div>
+      </div>
+      <div>
+        <label for="date">日付</label>
+        <div class="field-with-btn">
+          <input id="date" type="text" placeholder="例：2026/02/07" autocomplete="off" />
+          <button class="iconbtn" type="button" data-act="mic" data-target="date" aria-label="日付を音声入力">🎤</button>
+        </div>
+      </div>
+    </div>
+
+    <label for="f">F（訴え・状況）</label>
+    <div class="field-with-btn">
+      <textarea id="f" placeholder="例：本日も腰痛あり。歩行時に痛み増強。"></textarea>
+      <button class="iconbtn" type="button" data-act="mic" data-target="f" aria-label="Fを音声入力">🎤</button>
+    </div>
+
+    <label for="d">D（評価・所見）</label>
+    <div class="field-with-btn">
+      <textarea id="d" placeholder="例：立位で疼痛NRS○/10。体幹伸展で増悪。"></textarea>
+      <button class="iconbtn" type="button" data-act="mic" data-target="d" aria-label="Dを音声入力">🎤</button>
+    </div>
+
+    <label for="a">A（対応・介入）</label>
+    <div class="field-with-btn">
+      <textarea id="a" placeholder="例：体幹安定化練習、動作指導、疼痛緩和目的の徒手。"></textarea>
+      <button class="iconbtn" type="button" data-act="mic" data-target="a" aria-label="Aを音声入力">🎤</button>
+    </div>
+
+    <label for="r">R（反応・結果）</label>
+    <div class="field-with-btn">
+      <textarea id="r" placeholder="例：介入後、立位時痛み軽減。歩行距離が伸びた。"></textarea>
+      <button class="iconbtn" type="button" data-act="mic" data-target="r" aria-label="Rを音声入力">🎤</button>
+    </div>
+
+    <div class="btns">
+      <button class="primary" type="button" id="btnMake">作成</button>
+      <button type="button" id="btnCopy">コピー</button>
+      <button type="button" id="btnClear">クリア</button>
+    </div>
+
+    <pre id="out" aria-label="生成結果"></pre>
+
+    <div class="help">※「作成」→「コピー」でそのまま記録に貼れます</div>
+    <div class="warn" id="speechNote"></div>
+  </div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function buildText() {
+    const name = $("name").value.trim();
+    const date = $("date").value.trim();
+    const f = $("f").value.trim();
+    const d = $("d").value.trim();
+    const a = $("a").value.trim();
+    const r = $("r").value.trim();
+
+    const lines = [];
+    if (name) lines.push(`【利用者】${name}`);
+    if (date) lines.push(`【日付】${date}`);
+    if (name || date) lines.push("");
+
+    if (f) lines.push(`F：${f}`);
+    if (d) lines.push(`D：${d}`);
+    if (a) lines.push(`A：${a}`);
+    if (r) lines.push(`R：${r}`);
+
+    return lines.join("\n");
+  }
+
+  $("btnMake").addEventListener("click", () => {
+    $("out").textContent = buildText();
+  });
+
+  $("btnCopy").addEventListener("click", async () => {
+    const text = $("out").textContent || buildText();
+    if (!text.trim()) return;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      // 何も出さない（シンプル運用）
+    } catch (e) {
+      // クリップボード不可の環境向けフォールバック
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+  });
+
+  $("btnClear").addEventListener("click", () => {
+    ["name","date","f","d","a","r"].forEach(id => $(id).value = "");
+    $("out").textContent = "";
+  });
+
+  // --- 音声入力（対応ブラウザのみ）---
+  // iOS Safari は Web Speech API が無効なことがあるため、使えない場合はキーボードのマイク（音声入力）を案内
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null;
+  let busy = false;
+
+  function setSpeechNote(msg) {
+    $("speechNote").textContent = msg || "";
+  }
+
+  if (SpeechRecognition) {
+    rec = new SpeechRecognition();
+    rec.lang = "ja-JP";
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+
+    rec.onstart = () => { busy = true; };
+    rec.onend = () => { busy = false; };
+    rec.onerror = () => {
+      busy = false;
+      setSpeechNote("音声入力が開始できない場合は、iPhoneキーボードのマイク（音声入力）をご利用ください。");
+    };
+  } else {
+    setSpeechNote("この環境ではページ内の音声入力ボタンが使えない可能性があります。iPhoneキーボードのマイク（音声入力）をご利用ください。");
+  }
+
+  function startDictation(targetId) {
+    if (!rec) return;
+    if (busy) return;
+
+    setSpeechNote("");
+    rec.onresult = (ev) => {
+      const t = (ev.results?.[0]?.[0]?.transcript || "").trim();
+      if (!t) return;
+      const el = $(targetId);
+      // 追記（既に文字がある場合は改行 or スペース）
+      const sep = el.tagName === "TEXTAREA" ? (el.value ? "\n" : "") : (el.value ? " " : "");
+      el.value = el.value + sep + t;
+    };
+    try {
+      rec.start();
+    } catch (e) {
+      setSpeechNote("音声入力が開始できない場合は、iPhoneキーボードのマイク（音声入力）をご利用ください。");
+    }
+  }
+
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+    const act = btn.getAttribute("data-act");
+    const target = btn.getAttribute("data-target");
+    if (act === "mic") startDictation(target);
+  });
+</script>
+</body>
+</html>
