@@ -130,6 +130,23 @@ input[type="date"] {
   max-width: 100%;
   -webkit-appearance: none;
 }
+    /* === 音声ボタンが押せなくなる問題の対策 === */
+
+.badge{
+  position: fixed;
+  right: 18px;
+  bottom: 78px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.micBtn{
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 10000;
+  pointer-events: auto;
+}
   </style>
   .badge{
   position: fixed;
