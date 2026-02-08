@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>SOAP 自動記録メーカー</title>
+
+  <style>
+    :root { color-scheme: light dark; }
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;
+      margin:0; padding:18px;
+      max-width:860px; line-height:1.45;
+    }
+    h1{ font-size:22px; margin:0 0 8px; }
+    .subTitle{ margin:0 0 14px; opacity:.85; font-size:13px; }
+
+    .card{
+      border:1px solid rgba(127,127,127,.35);
+      border-radius:16px;
+      padding:14px;
+      background: rgba(127,127,127,.06);
+    }
+
+    label{ display:block; font-size:12px; opacity:.9; margin:10px 0 6px; }
+    input, textarea{
+      width:100%;
+      max-width:100%;
+      box-sizing:border-box;
+      border:1px solid rgba(127,127,127,.35);
+      border-radius:12px;
+      padding:12px;
+      background: rgba(127,127,127,.08);
+      color:inherit;
+      font-size:16px;
+      outline:none;
+    }
+    textarea{ min-height:84px; resize:vertical; }
+
+    .row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+      align-items:start;
+    }
+    .row > div{ min-width:0; }
+    input{ min-width:0; }
+
+    @media (max-width:520px){
+      .row{ grid-template-columns:1fr; }
+    }
+
+    .btnRow{
+      display:flex; flex-wrap:wrap;
+      gap:10px;
+      margin-top:12px;
+    }
+    button{
+      border:1px solid rgba(127,127,127,.35);
+      background: rgba(127,127,127,.08);
+      color:inherit;
+      border-radius:14px;
+      padding:12px 14px;
+      font-size:14px;
+    }
+    button.primary{
+      background: rgba(60,120,255,.18);
+      border-color: rgba(60,120,255,.45);
+    }
+
+    .out{ margin-top:14px; }
+    pre{
+      white-space:pre-wrap;
+      word-break:break-word;
+      border:1px solid rgba(127,127,127,.35);
+      background: rgba(127,127,127,.06);
+      border-radius:14px;
+      padding:12px;
+      min-height:80px;
+    }
+
+    .badge{
+      position:fixed;
+      right:14px;
+      bottom:86px;
+      z-index:10;
+      font-size:12px;
+      opacity:.9;
+      border:1px solid rgba(127,127,127,.35);
+      background: rgba(0,0,0,.55);
+      color:#fff;
+      padding:8px 10px;
+      border-radius:999px;
+    }
+    .micBtn{
+      position:fixed;
+      right:14px;
+      bottom:18px;
+      z-index:10;
+      border:1px solid rgba(127,127,127,.35);
+      background: rgba(0,0,0,.8);
+      color:#fff;
+      border-radius:999px;
+      padding:14px 16px;
+      font-size:15px;
+    }
+    a.back{
+      display:inline-block;
+      margin-top:10px;
+      font-size:13px;
+      opacity:.9;
+      color:inherit;
+      text-decoration:none;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>SOAP 自動記録メーカー</h1>
+  <p class="subTitle">入力して「コード化→コピー」。</p>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>利用者（イニシャル）</label>
+        <input id="client" placeholder="例：A様 / KM など（個人が特定できる情報は入力しない）" />
+      </div>
+      <div>
+        <label>日付</label>
+        <input id="date" type="date" />
+      </div>
+    </div>
+
+    <label>S（主観）</label>
+    <textarea id="s" placeholder="例：本人訴え、痛み、体調、希望など"></textarea>
+
+    <label>O（客観）</label>
+    <textarea id="o" placeholder="例：バイタル、所見、動作、観察など"></textarea>
+
+    <label>A（評価）</label>
+    <textarea id="a" placeholder="例：解釈、問題点、要因、リスクなど"></textarea>
+
+    <label>P（計画）</label>
+    <textarea id="p" placeholder="例：実施内容、次回方針、指導など"></textarea>
+
+    <div class="btnRow">
+      <button class="primary" id="render">コード化してコピー</button>
+      <button id="clear">全消去</button>
+      <button id="save">この内容を保存</button>
+      <button id="load">保存を読み込み</button>
+    </div>
+
+    <div class="out">
+      <label>出力（プレビュー）</label>
+      <pre id="preview"></pre>
+    </div>
+
+    <a class="back" href="../../">← トップへ戻る</a>
+  </div>
+
+  <div class="badge" id="status">待機中</div>
+  <button class="micBtn" id="mic">🎙 音声開始</button>
+
+<script>
+  (function initDate(){
+    const el = document.getElementById('date');
+    if (!el.value) {
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const dd = String(d.getDate()).padStart(2,'0');
+      el.value = `${yyyy}-${mm}-${dd}`;
+    }
+  })();
+
+  const $ = (id)=>document.getElementById(id);
+
+  function buildText(){
+    const client = $('client').value.trim();
+    const date = $('date').value ? $('date').value.replaceAll('-','/') : '';
+    const s = $('s').value.trim();
+    const o = $('o').value.trim();
+    const a = $('a').value.trim();
+    const p = $('p').value.trim();
+
+    const head = `${date}${client ? " / " + client : ""}`.trim();
+    return [
+      head ? `【${head}】` : '',
+      s ? `S：${s}` : 'S：',
+      o ? `O：${o}` : 'O：',
+      a ? `A：${a}` : 'A：',
+      p ? `P：${p}` : 'P：'
+    ].filter(Boolean).join('\n');
+  }
+
+  function render(){
+    $('preview').textContent = buildText();
+  }
+
+  async function copyToClipboard(text){
+    try{
+      await navigator.clipboard.writeText(text);
+      $('status').textContent = 'コピーしました';
+      setTimeout(()=> $('status').textContent = '待機中', 1200);
+    }catch(e){
+      $('status').textContent = 'コピー失敗（長押しでコピーしてください）';
+    }
+  }
+
+  $('render').addEventListener('click', ()=>{
+    render();
+    copyToClipboard($('preview').textContent);
+  });
+
+  $('clear').addEventListener('click', ()=>{
+    ['client','s','o','a','p'].forEach(id=>$(id).value='');
+    render();
+  });
+
+  $('save').addEventListener('click', ()=>{
+    const payload = {
+      client:$('client').value, date:$('date').value,
+      s:$('s').value, o:$('o').value, a:$('a').value, p:$('p').value
+    };
+    localStorage.setItem('soap_save', JSON.stringify(payload));
+    $('status').textContent = '保存しました';
+    setTimeout(()=> $('status').textContent = '待機中', 1200);
+  });
+
+  $('load').addEventListener('click', ()=>{
+    const raw = localStorage.getItem('soap_save');
+    if(!raw){ $('status').textContent = '保存がありません'; return; }
+    const p = JSON.parse(raw);
+    $('client').value = p.client || '';
+    $('date').value = p.date || $('date').value;
+    $('s').value = p.s || '';
+    $('o').value = p.o || '';
+    $('a').value = p.a || '';
+    $('p').value = p.p || '';
+    render();
+    $('status').textContent = '読み込みました';
+    setTimeout(()=> $('status').textContent = '待機中', 1200);
+  });
+
+  // 音声（簡易：Sに追記）
+  let rec = null;
+  let listening = false;
+  $('mic').addEventListener('click', ()=>{
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SR){
+      $('status').textContent = 'このブラウザは音声入力非対応';
+      return;
+    }
+    if(!rec){
+      rec = new SR();
+      rec.lang = 'ja-JP';
+      rec.interimResults = true;
+      rec.continuous = true;
+
+      rec.onresult = (e)=>{
+        let text = '';
+        for(let i=e.resultIndex;i<e.results.length;i++){
+          text += e.results[i][0].transcript;
+        }
+        $('s').value = ($('s').value + ( $('s').value ? '\n' : '' ) + text).trim();
+        render();
+      };
+      rec.onend = ()=>{
+        if(listening){ try{ rec.start(); }catch(_){} }
+      };
+    }
+
+    if(!listening){
+      listening = true;
+      $('status').textContent = '音声入力中';
+      $('mic').textContent = '🛑 音声停止';
+      try{ rec.start(); }catch(_){}
+    }else{
+      listening = false;
+      $('status').textContent = '待機中';
+      $('mic').textContent = '🎙 音声開始';
+      try{ rec.stop(); }catch(_){}
+    }
+  });
+
+  render();
+</script>
+</body>
+</html>
