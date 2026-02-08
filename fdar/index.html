@@ -558,13 +558,7 @@
 // iPhone対策：click だけだと拾えない事がある
 $('mic').addEventListener('pointerdown', micHandler);
 $('mic').addEventListener('touchstart', micHandler, { passive: true });
-$('mic').addEventListener('click', micHandler);    // 「起動」→「開始」待ち か、入力中→停止
-    if(listening){
-      stopListening();
-      return;
-    }
-    startListening();
-  });
+
 
   // 入力が手打ちでもプレビュー更新
   ['client','f','d','a','r','s','o','a2','p'].forEach(id=>{
