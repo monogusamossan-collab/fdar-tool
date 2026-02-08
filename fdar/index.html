@@ -388,7 +388,13 @@ $('mic').addEventListener('click', () => {
     try { rec.stop(); } catch(_) {}
   }
 });
-  
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const b = document.getElementById('mic');
+    if (!b) return;
+    b.addEventListener('click', () => alert('mic clicked'));
+  });
+</script>
 </script>
 </body>
 </html>
