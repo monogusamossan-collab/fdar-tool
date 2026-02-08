@@ -177,10 +177,7 @@
     let lastFieldId = 'f';
     const targetIds = ['f','d','a','r'];
 
-    function setLast(id){
-      if (targetIds.includes(id)) lastFieldId = id;
-    }
-
+    
     targetIds.concat(['client','date']).forEach(id=>{
       const el = $(id);
       if(!el) return;
