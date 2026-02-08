@@ -147,6 +147,19 @@ input[type="date"] {
   z-index: 10000;
   pointer-events: auto;
 }
+    /* === マイクボタンを最前面に出す === */
+
+#mic {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 99999;
+  pointer-events: auto;
+}
+
+#status {
+  pointer-events: none;
+}
   </style>
   .badge{
   position: fixed;
