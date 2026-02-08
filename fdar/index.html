@@ -267,87 +267,82 @@ let lastFieldId = 'f';
     $('status').textContent = '読み込みました';
     setTimeout(()=> $('status').textContent = '待機中', 1200);
   });
+// ===== 音声入力（安定版・iPhone対応）=====
+let rec = null;
+let listening = false;
 
-  // 音声（簡易：入力欄に追記）
-  let rec = null;
-  // 最後に触った入力欄へ音声を入れる
+// 最後に触った入力欄を記憶
 let lastFieldId = 'f';
-['client','f','d','a','r'].forEach(id=>{
-  const el = $(id);
-  if(!el) return;
-  el.addEventListener('focus', ()=> lastFieldId = id);
-  el.addEventListener('click', ()=> lastFieldId = id);
+const targetIds = ['f','d','a','r'];
+
+document.addEventListener('focusin', () => {
+  const el = document.activeElement;
+  if (el && targetIds.includes(el.id)) {
+    lastFieldId = el.id;
+  }
 });
 
-function getTargetField(){
-  const ae = document.activeElement;
-  if (ae && ae.id && ['client','f','d','a','r'].includes(ae.id)) return ae.id;
-  return lastFieldId || 'f';
-}
+$('mic').addEventListener('click', () => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-function appendDictation(text){
-  const id = getTargetField();
-  const el = $(id);
-  if(!el) return;
-  const sep = (el.tagName === 'TEXTAREA' && el.value && !el.value.endsWith('\n')) ? '\n' : '';
-  el.value = (el.value || '') + sep + text;
-  render();
-}
-  let listening = false;
-  $('mic').addEventListener('click', ()=>{
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if(!SR){
-      $('status').textContent = 'このブラウザは音声入力非対応';
-      return;
-    }
-    if(!rec){
-      rec = new SR();
-      rec.lang = 'ja-JP';
-      rec.interimResults = true;
-      rec.continuous = true;
-
-      rec.onresult = (e)=>{
-        let text = '';
-        for(let i=e.resultIndex;i<e.results.length;i++){
-          text += e.results[i][0].transcript;
-        }
-         rec.onresult = (e)=>{
-  let text = '';
-  for (let i = e.resultIndex; i < e.results.length; i++){
-    text += e.results[i][0].transcript;
+  if (!SR) {
+    $('status').textContent = 'このブラウザは音声非対応';
+    return;
   }
 
-  // 今フォーカスしている入力欄に入れる（なければF）
-  const ae = document.activeElement;
-const ids = ['f','d','a','r'];
-const id = (ae && ids.includes(ae.id)) ? ae.id : lastFieldId;
+  if (!rec) {
+    rec = new SR();
+    rec.lang = 'ja-JP';
+    rec.interimResults = true;
+    rec.continuous = true;
 
-  const el = $(id);
-  el.value = (el.value + (el.value ? '\n' : '') + text).trim();
-  render();
-};
-        
-        
-      };
-      rec.onend = ()=>{
-        if(listening){ try{ rec.start(); }catch(_){} }
-      };
-    }
+    rec.onresult = (e) => {
+      let text = '';
 
-    if(!listening){
-      listening = true;
-      $('status').textContent = '音声入力中';
-      $('mic').textContent = '🛑 音声停止';
-      try{ rec.start(); }catch(_){}
-    }else{
-      listening = false;
-      $('status').textContent = '待機中';
-      $('mic').textContent = '🎙 音声開始';
-      try{ rec.stop(); }catch(_){}
-    }
-  });
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        text += e.results[i][0].transcript;
+      }
 
-  render();
+      const active = document.activeElement;
+      const id = (active && targetIds.includes(active.id))
+        ? active.id
+        : lastFieldId;
+
+      const el = $(id);
+
+      el.value =
+        (el.value + (el.value ? '\n' : '') + text).trim();
+
+      render();
+    };
+
+    rec.onend = () => {
+      if (listening) {
+        try { rec.start(); } catch(_) {}
+      }
+    };
+
+    rec.onerror = (e) => {
+      $('status').textContent = '音声エラー';
+    };
+  }
+
+  if (!listening) {
+    listening = true;
+    $('status').textContent = '音声入力中';
+    $('mic').textContent = '🛑 音声停止';
+
+    try { rec.start(); } catch(_) {}
+
+  } else {
+    listening = false;
+    $('status').textContent = '待機中';
+    $('mic').textContent = '🎙 音声開始';
+
+    try { rec.stop(); } catch(_) {}
+  }
+});
+  
 </script>
 </body>
 </html>
