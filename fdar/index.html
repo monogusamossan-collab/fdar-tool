@@ -193,7 +193,14 @@ input[type="date"] {
   })();
 
   const $ = (id)=>document.getElementById(id);
-
+// 最後に触った入力欄を覚える（iPhone対策）
+let lastFieldId = 'f';
+['client','f','d','a','r','s','o','p'].forEach(id=>{
+  const el = $(id);
+  if(!el) return;
+  el.addEventListener('focus', ()=>{ lastFieldId = id; });
+  el.addEventListener('click', ()=>{ lastFieldId = id; });
+});
   function buildText(){
     const client = $('client').value.trim();
     const date = $('date').value ? $('date').value.replaceAll('-','/') : '';
@@ -304,9 +311,23 @@ function appendDictation(text){
         for(let i=e.resultIndex;i<e.results.length;i++){
           text += e.results[i][0].transcript;
         }
-        // とりあえずFに追記（必要なら運用でD/A/Rに振り分け）
-        ((el)=>{ const id = el && el.id; const ok = ['client','f','d','a','r'].includes(id); const t = ok ? $(id) : $('f'); t.value = (t.value||'') + text; }) (document.activeElement);
-        render();
+         rec.onresult = (e)=>{
+  let text = '';
+  for (let i = e.resultIndex; i < e.results.length; i++){
+    text += e.results[i][0].transcript;
+  }
+
+  // 今フォーカスしている入力欄に入れる（なければF）
+  const ae = document.activeElement;
+const ids = ['f','d','a','r'];
+const id = (ae && ids.includes(ae.id)) ? ae.id : lastFieldId;
+
+  const el = $(id);
+  el.value = (el.value + (el.value ? '\n' : '') + text).trim();
+  render();
+};
+        
+        
       };
       rec.onend = ()=>{
         if(listening){ try{ rec.start(); }catch(_){} }
