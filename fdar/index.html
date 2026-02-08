@@ -39,11 +39,12 @@
 
     /* ここが「日付がはみ出る」根治 */
     .row{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:12px;
-      align-items:start;
-    }
+  min-width:0;
+  display:grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  gap:12px;
+  align-items:start;
+}
     .row > div{ min-width:0; }      /* iOSのはみ出し対策 */
     input{ min-width:0; }          /* iOSのはみ出し対策 */
 
