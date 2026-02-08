@@ -263,6 +263,29 @@ input[type="date"] {
 
   // 音声（簡易：入力欄に追記）
   let rec = null;
+  // 最後に触った入力欄へ音声を入れる
+let lastFieldId = 'f';
+['client','f','d','a','r'].forEach(id=>{
+  const el = $(id);
+  if(!el) return;
+  el.addEventListener('focus', ()=> lastFieldId = id);
+  el.addEventListener('click', ()=> lastFieldId = id);
+});
+
+function getTargetField(){
+  const ae = document.activeElement;
+  if (ae && ae.id && ['client','f','d','a','r'].includes(ae.id)) return ae.id;
+  return lastFieldId || 'f';
+}
+
+function appendDictation(text){
+  const id = getTargetField();
+  const el = $(id);
+  if(!el) return;
+  const sep = (el.tagName === 'TEXTAREA' && el.value && !el.value.endsWith('\n')) ? '\n' : '';
+  el.value = (el.value || '') + sep + text;
+  render();
+}
   let listening = false;
   $('mic').addEventListener('click', ()=>{
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -282,7 +305,7 @@ input[type="date"] {
           text += e.results[i][0].transcript;
         }
         // とりあえずFに追記（必要なら運用でD/A/Rに振り分け）
-        $('f').value = ($('f').value + ( $('f').value ? '\n' : '' ) + text).trim();
+        ((el)=>{ const id = el && el.id; const ok = ['client','f','d','a','r'].includes(id); const t = ok ? $(id) : $('f'); t.value = (t.value||'') + text; }) (document.activeElement);
         render();
       };
       rec.onend = ()=>{
