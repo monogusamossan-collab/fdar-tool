@@ -114,6 +114,21 @@
       color:inherit;
       text-decoration:none;
     }
+    /* 入力欄はみ出し防止 */
+input,
+textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  font-size: 16px;
+}
+
+/* date専用（iPhone対策） */
+input[type="date"] {
+  width: 100%;
+  max-width: 100%;
+  -webkit-appearance: none;
+}
   </style>
 </head>
 
