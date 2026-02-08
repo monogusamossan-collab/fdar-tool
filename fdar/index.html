@@ -2,192 +2,113 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>FDAR 自動記録メーカー</title>
-
   <style>
     :root { color-scheme: light dark; }
     body{
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;
-      margin:0; padding:18px;
-      max-width:860px; line-height:1.45;
+      margin:0; padding:18px; max-width:860px; line-height:1.45;
     }
-    h1{ font-size:22px; margin:0 0 8px; }
-    .subTitle{ margin:0 0 14px; opacity:.85; font-size:13px; }
-
+    h1{ font-size:22px; margin:0 0 10px; }
+    .subTitle{ margin:0 0 14px; opacity:.85; }
     .card{
       border:1px solid rgba(127,127,127,.35);
       border-radius:16px;
       padding:14px;
-      background: rgba(127,127,127,.06);
+      background:rgba(127,127,127,.10);
     }
-
-    label{ display:block; font-size:12px; opacity:.9; margin:10px 0 6px; }
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    @media (max-width:640px){
+      .row{ grid-template-columns:1fr; }
+    }
+    label{ display:block; font-size:13px; opacity:.9; margin:0 0 6px; }
     input, textarea{
       width:100%;
       max-width:100%;
       box-sizing:border-box;
-      border:1px solid rgba(127,127,127,.35);
-      border-radius:12px;
-      padding:12px;
-      background: rgba(127,127,127,.08);
-      color:inherit;
       font-size:16px;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid rgba(127,127,127,.35);
+      background:rgba(127,127,127,.10);
+      color:inherit;
       outline:none;
     }
-    textarea{ min-height:84px; resize:vertical; }
-
-    /* ここが「日付がはみ出る」根治 */
-    .row{
-  min-width:0;
-  display:grid;
-  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
-  gap:12px;
-  align-items:start;
-}
-    .row > div{ min-width:0; }      /* iOSのはみ出し対策 */
-    input{ min-width:0; }          /* iOSのはみ出し対策 */
-
-    @media (max-width:520px){
-      .row{ grid-template-columns:1fr; }
-    }
-
-    .btnRow{
-      display:flex; flex-wrap:wrap;
+    textarea{ min-height:92px; resize:vertical; }
+    .actions{
+      display:flex;
+      flex-wrap:wrap;
       gap:10px;
       margin-top:12px;
+      align-items:center;
     }
     button{
       border:1px solid rgba(127,127,127,.35);
-      background: rgba(127,127,127,.08);
+      background:rgba(127,127,127,.12);
       color:inherit;
-      border-radius:14px;
       padding:12px 14px;
-      font-size:14px;
+      border-radius:12px;
+      font-size:15px;
     }
     button.primary{
-      background: rgba(60,120,255,.18);
-      border-color: rgba(60,120,255,.45);
+      background:rgba(80,140,255,.18);
+      border-color:rgba(80,140,255,.45);
     }
+    button:disabled{ opacity:.5; }
 
-    .out{ margin-top:14px; }
-    pre{
-      white-space:pre-wrap;
-      word-break:break-word;
-      border:1px solid rgba(127,127,127,.35);
-      background: rgba(127,127,127,.06);
-      border-radius:14px;
-      padding:12px;
-      min-height:80px;
-    }
-
-    /* 右下マイクUI（SOAPと統一） */
     .badge{
-      position:fixed;
-      right:14px;
-      bottom:86px;
-      z-index:10;
-      font-size:12px;
-      opacity:.9;
-      border:1px solid rgba(127,127,127,.35);
-      background: rgba(0,0,0,.55);
-      color:#fff;
-      padding:8px 10px;
+      display:inline-block;
+      padding:10px 12px;
       border-radius:999px;
+      border:1px solid rgba(127,127,127,.35);
+      background:rgba(0,0,0,.08);
+      font-size:13px;
+      opacity:.95;
     }
+
     .micBtn{
       position:fixed;
       right:14px;
       bottom:18px;
-      z-index:10;
+      z-index:9999;
       border:1px solid rgba(127,127,127,.35);
-      background: rgba(0,0,0,.8);
+      background:rgba(0,0,0,.80);
       color:#fff;
       border-radius:999px;
       padding:14px 16px;
       font-size:15px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.22);
     }
-    a.back{
-      display:inline-block;
-      margin-top:10px;
-      font-size:13px;
-      opacity:.9;
-      color:inherit;
-      text-decoration:none;
+
+    pre{
+      white-space:pre-wrap;
+      word-break:break-word;
+      border:1px solid rgba(127,127,127,.35);
+      background:rgba(127,127,127,.08);
+      border-radius:12px;
+      padding:12px;
+      margin-top:12px;
+      min-height:80px;
     }
-    /* 入力欄はみ出し防止 */
-input,
-textarea {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  font-size: 16px;
-}
-
-/* date専用（iPhone対策） */
-input[type="date"] {
-  width: 100%;
-  max-width: 100%;
-  -webkit-appearance: none;
-}
-    /* === 音声ボタンが押せなくなる問題の対策 === */
-
-.badge{
-  position: fixed;
-  right: 18px;
-  bottom: 78px;
-  z-index: 9999;
-  pointer-events: none;
-}
-
-.micBtn{
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  z-index: 10000;
-  pointer-events: auto;
-}
-    /* === マイクボタンを最前面に出す === */
-
-#mic {
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  z-index: 99999;
-  pointer-events: auto;
-}
-
-#status {
-  pointer-events: none;
-}
+    .hint{ font-size:12px; opacity:.75; margin-top:8px; }
   </style>
-  .badge{
-  position: fixed;
-  right: 18px;
-  bottom: 78px;
-  z-index: 9999;
-  pointer-events: none; /* バッジがタップを邪魔しない */
-}
-
-.micBtn{
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  z-index: 10000;
-  pointer-events: auto;
-}
-  
 </head>
 
 <body>
   <h1>FDAR 自動記録メーカー</h1>
-  <p class="subTitle">入力して「コード化→コピー」。</p>
+  <p class="subTitle">入力して「コード化してコピー」で、FDAR形式に整形してクリップボードへ送ります。</p>
 
   <div class="card">
     <div class="row">
       <div>
         <label>利用者（イニシャル推奨）</label>
-        <input id="client" placeholder="例：A様 / KM など（個人が特定できる情報は入力しない）" />
+        <input id="client" placeholder="例：A様 / KM など（個人が特定できる情報は避ける）" />
       </div>
       <div>
         <label>日付</label>
@@ -195,199 +116,245 @@ input[type="date"] {
       </div>
     </div>
 
-    <label>F（Focus）</label>
-    <textarea id="f" placeholder="例：本日の焦点、課題、主訴など"></textarea>
+    <div class="row">
+      <div>
+        <label>F（Focus）</label>
+        <textarea id="f" placeholder="例：本日の焦点、課題、主訴など"></textarea>
+      </div>
+      <div>
+        <label>D（Data）</label>
+        <textarea id="d" placeholder="例：バイタル、所見、動作、観察など"></textarea>
+      </div>
+    </div>
 
-    <label>D（Data）</label>
-    <textarea id="d" placeholder="例：バイタル、所見、動作、観察など"></textarea>
+    <div class="row">
+      <div>
+        <label>A（Action）</label>
+        <textarea id="a" placeholder="例：実施内容、介入、指導など"></textarea>
+      </div>
+      <div>
+        <label>R（Response）</label>
+        <textarea id="r" placeholder="例：反応、変化、評価など"></textarea>
+      </div>
+    </div>
 
-    <label>A（Action）</label>
-    <textarea id="a" placeholder="例：実施内容、介入、指導など"></textarea>
-
-    <label>R（Response）</label>
-    <textarea id="r" placeholder="例：反応、変化、評価など"></textarea>
-
-    <div class="btnRow">
-      <button class="primary" id="render">コード化してコピー</button>
+    <div class="actions">
+      <button class="primary" id="copy">コード化してコピー</button>
       <button id="clear">全消去</button>
       <button id="save">この内容を保存</button>
       <button id="load">保存を読み込み</button>
+      <span class="badge" id="status">待機中</span>
     </div>
 
-    <div class="out">
-      <label>出力（プレビュー）</label>
-      <pre id="preview"></pre>
-    </div>
+    <div class="hint">音声入力：入れたい欄（F/D/A/R）を一度タップしてから、右下の「音声開始」。</div>
 
-    <a class="back" href="../">← トップへ戻る</a>
+    <pre id="preview"></pre>
   </div>
 
-  <div class="badge" id="status">待機中</div>
-  <button class="micBtn" id="mic">🎙 音声開始</button>
+  <button class="micBtn" id="mic" type="button">🎙 音声開始</button>
 
-<script>
-  // 初期日付
-  (function initDate(){
-    const el = document.getElementById('date');
-    if (!el.value) {
-      const d = new Date();
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth()+1).padStart(2,'0');
-      const dd = String(d.getDate()).padStart(2,'0');
-      el.value = `${yyyy}-${mm}-${dd}`;
-    }
-  })();
-
-  const $ = (id)=>document.getElementById(id);
-// 最後に触った入力欄を覚える（iPhone対策）
-let lastFieldId = 'f';
-['client','f','d','a','r','s','o','p'].forEach(id=>{
-  const el = $(id);
-  if(!el) return;
-  el.addEventListener('focus', ()=>{ lastFieldId = id; });
-  el.addEventListener('click', ()=>{ lastFieldId = id; });
-});
-  function buildText(){
-    const client = $('client').value.trim();
-    const date = $('date').value ? $('date').value.replaceAll('-','/') : '';
-    const f = $('f').value.trim();
-    const d = $('d').value.trim();
-    const a = $('a').value.trim();
-    const r = $('r').value.trim();
-
-    const head = `${date}${client ? " / " + client : ""}`.trim();
-    return [
-      head ? `【${head}】` : '',
-      f ? `F：${f}` : 'F：',
-      d ? `D：${d}` : 'D：',
-      a ? `A：${a}` : 'A：',
-      r ? `R：${r}` : 'R：'
-    ].filter(Boolean).join('\n');
-  }
-
-  function render(){
-    $('preview').textContent = buildText();
-  }
-
-  async function copyToClipboard(text){
-    try{
-      await navigator.clipboard.writeText(text);
-      $('status').textContent = 'コピーしました';
-      setTimeout(()=> $('status').textContent = '待機中', 1200);
-    }catch(e){
-      $('status').textContent = 'コピー失敗（長押しでコピーしてください）';
-    }
-  }
-
-  $('render').addEventListener('click', ()=>{
-    render();
-    copyToClipboard($('preview').textContent);
-  });
-
-  $('clear').addEventListener('click', ()=>{
-    ['client','f','d','a','r'].forEach(id=>$(id).value='');
-    render();
-  });
-
-  $('save').addEventListener('click', ()=>{
-    const payload = {
-      client:$('client').value, date:$('date').value,
-      f:$('f').value, d:$('d').value, a:$('a').value, r:$('r').value
-    };
-    localStorage.setItem('fdar_save', JSON.stringify(payload));
-    $('status').textContent = '保存しました';
-    setTimeout(()=> $('status').textContent = '待機中', 1200);
-  });
-
-  $('load').addEventListener('click', ()=>{
-    const raw = localStorage.getItem('fdar_save');
-    if(!raw){ $('status').textContent = '保存がありません'; return; }
-    const p = JSON.parse(raw);
-    $('client').value = p.client || '';
-    $('date').value = p.date || $('date').value;
-    $('f').value = p.f || '';
-    $('d').value = p.d || '';
-    $('a').value = p.a || '';
-    $('r').value = p.r || '';
-    render();
-    $('status').textContent = '読み込みました';
-    setTimeout(()=> $('status').textContent = '待機中', 1200);
-  });
-// ===== 音声入力（安定版・iPhone対応）=====
-let rec = null;
-let listening = false;
-
-// 最後に触った入力欄を記憶
-let lastFieldId = 'f';
-const targetIds = ['f','d','a','r'];
-
-document.addEventListener('focusin', () => {
-  const el = document.activeElement;
-  if (el && targetIds.includes(el.id)) {
-    lastFieldId = el.id;
-  }
-});
-
-$('mic').addEventListener('click', () => {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-  if (!SR) {
-    $('status').textContent = 'このブラウザは音声非対応';
-    return;
-  }
-
-  if (!rec) {
-    rec = new SR();
-    rec.lang = 'ja-JP';
-    rec.interimResults = true;
-    rec.continuous = true;
-
-    rec.onresult = (e) => {
-      let text = '';
-
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        text += e.results[i][0].transcript;
+  <script>
+    // ===== 初期日付 =====
+    (function initDate(){
+      const el = document.getElementById('date');
+      if (!el.value) {
+        const d = new Date();
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth()+1).padStart(2,'0');
+        const dd = String(d.getDate()).padStart(2,'0');
+        el.value = `${yyyy}-${mm}-${dd}`;
       }
+    })();
 
-      const active = document.activeElement;
-      const id = (active && targetIds.includes(active.id))
-        ? active.id
-        : lastFieldId;
+    const $ = (id)=>document.getElementById(id);
 
+    // ===== 最後に触った入力欄を覚える（iPhone対策の本体） =====
+    let lastFieldId = 'f';
+    const targetIds = ['f','d','a','r'];
+
+    function setLast(id){
+      if (targetIds.includes(id)) lastFieldId = id;
+    }
+
+    // iOSは focus が飛ぶことがあるので、pointer 系も拾う
+    targetIds.forEach(id=>{
       const el = $(id);
+      el.addEventListener('focus', ()=>setLast(id));
+      el.addEventListener('click', ()=>setLast(id));
+      el.addEventListener('pointerdown', ()=>setLast(id));
+      el.addEventListener('touchstart', ()=>setLast(id), {passive:true});
+    });
 
-      el.value =
-        (el.value + (el.value ? '\n' : '') + text).trim();
+    // ===== テキスト生成 =====
+    function buildText(){
+      const client = $('client').value.trim();
+      const date = $('date').value ? $('date').value : '';
+      const f = $('f').value.trim();
+      const d = $('d').value.trim();
+      const a = $('a').value.trim();
+      const r = $('r').value.trim();
 
-      render();
-    };
+      const head = `${date}${client ? ' / ' + client : ''}`.trim();
 
-    rec.onend = () => {
-      if (listening) {
-        try { rec.start(); } catch(_) {}
+      const lines = [];
+      if (head) lines.push(head);
+      lines.push(`F：${f}`);
+      lines.push(`D：${d}`);
+      lines.push(`A：${a}`);
+      lines.push(`R：${r}`);
+      return lines.join('\n');
+    }
+
+    function render(){
+      $('preview').textContent = buildText();
+    }
+
+    // 入力で即プレビュー更新
+    ['client','date','f','d','a','r'].forEach(id=>{
+      $(id).addEventListener('input', render);
+      $(id).addEventListener('change', render);
+    });
+
+    // ===== クリップボード =====
+    async function copyToClipboard(text){
+      try{
+        await navigator.clipboard.writeText(text);
+        $('status').textContent = 'コピーしました';
+        setTimeout(()=> $('status').textContent = '待機中', 1400);
+      }catch(e){
+        $('status').textContent = 'コピー失敗（長押しでコピー）';
       }
-    };
+    }
 
-    rec.onerror = (e) => {
-      $('status').textContent = '音声エラー';
-    };
-  }
+    $('copy').addEventListener('click', ()=>{
+      render();
+      copyToClipboard($('preview').textContent);
+    });
 
-  if (!listening) {
-    listening = true;
-    $('status').textContent = '音声入力中';
-    $('mic').textContent = '🛑 音声停止';
+    $('clear').addEventListener('click', ()=>{
+      ['client','f','d','a','r'].forEach(id=> $(id).value = '');
+      render();
+      $('status').textContent = '消去しました';
+      setTimeout(()=> $('status').textContent = '待機中', 1200);
+      lastFieldId = 'f';
+    });
 
-    try { rec.start(); } catch(_) {}
+    // ===== 保存/読み込み（localStorage） =====
+    const KEY = 'fdar_tool_v1';
+    $('save').addEventListener('click', ()=>{
+      const payload = {
+        client:$('client').value,
+        date:$('date').value,
+        f:$('f').value,
+        d:$('d').value,
+        a:$('a').value,
+        r:$('r').value,
+      };
+      localStorage.setItem(KEY, JSON.stringify(payload));
+      $('status').textContent = '保存しました';
+      setTimeout(()=> $('status').textContent = '待機中', 1200);
+    });
 
-  } else {
-    listening = false;
-    $('status').textContent = '待機中';
-    $('mic').textContent = '🎙 音声開始';
+    $('load').addEventListener('click', ()=>{
+      const raw = localStorage.getItem(KEY);
+      if(!raw){
+        $('status').textContent = '保存データなし';
+        setTimeout(()=> $('status').textContent = '待機中', 1200);
+        return;
+      }
+      try{
+        const p = JSON.parse(raw);
+        $('client').value = p.client || '';
+        $('date').value = p.date || $('date').value;
+        $('f').value = p.f || '';
+        $('d').value = p.d || '';
+        $('a').value = p.a || '';
+        $('r').value = p.r || '';
+        render();
+        $('status').textContent = '読み込みました';
+        setTimeout(()=> $('status').textContent = '待機中', 1200);
+      }catch(e){
+        $('status').textContent = '読み込み失敗';
+        setTimeout(()=> $('status').textContent = '待機中', 1200);
+      }
+    });
 
-    try { rec.stop(); } catch(_) {}
-  }
-});
-</script>
+    // ===== 音声入力 =====
+    let rec = null;
+    let listening = false;
+
+    function getSR(){
+      return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    }
+
+    function ensureRec(){
+      const SR = getSR();
+      if(!SR) return null;
+      if(rec) return rec;
+
+      rec = new SR();
+      rec.lang = 'ja-JP';
+      rec.interimResults = true;
+      rec.continuous = true;
+
+      rec.onresult = (e)=>{
+        let text = '';
+        for(let i = e.resultIndex; i < e.results.length; i++){
+          text += e.results[i][0].transcript;
+        }
+        text = (text || '').trim();
+        if(!text) return;
+
+        // ★ここが重要：activeElementは見ない。lastFieldIdだけで決める
+        const id = lastFieldId || 'f';
+        const el = $(id);
+
+        // 追記（改行挿入）
+        el.value = (el.value + (el.value ? '\n' : '') + text).trim();
+        render();
+      };
+
+      rec.onend = ()=>{
+        // continuousでもiOSは切れることがあるので、ONなら再開
+        if(listening){
+          try{ rec.start(); }catch(_){}
+        }
+      };
+
+      rec.onerror = ()=>{
+        $('status').textContent = '音声エラー';
+        setTimeout(()=> $('status').textContent = '待機中', 1200);
+      };
+
+      return rec;
+    }
+
+    $('mic').addEventListener('click', ()=>{
+      const SR = getSR();
+      if(!SR){
+        $('status').textContent = 'このブラウザは音声入力非対応';
+        return;
+      }
+
+      ensureRec();
+
+      if(!listening){
+        listening = true;
+        $('status').textContent = '音声入力中';
+        $('mic').textContent = '🛑 音声停止';
+
+        try{ rec.start(); }catch(_){}
+      }else{
+        listening = false;
+        $('status').textContent = '待機中';
+        $('mic').textContent = '🎙 音声開始';
+
+        try{ rec.stop(); }catch(_){}
+      }
+    });
+
+    // 初期描画
+    render();
+  </script>
 </body>
 </html>
