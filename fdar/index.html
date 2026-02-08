@@ -546,8 +546,19 @@
     try{ rec && rec.stop(); }catch(_){}
   }
 
-  $('mic').addEventListener('click', ()=>{
-    // 「起動」→「開始」待ち か、入力中→停止
+  const micHandler = ()=>{
+  // 「起動」→「開始」待ち か、入力中→停止
+  if(listening){
+    stopListening();
+    return;
+  }
+  startListening();
+};
+
+// iPhone対策：click だけだと拾えない事がある
+$('mic').addEventListener('pointerdown', micHandler);
+$('mic').addEventListener('touchstart', micHandler, { passive: true });
+$('mic').addEventListener('click', micHandler);    // 「起動」→「開始」待ち か、入力中→停止
     if(listening){
       stopListening();
       return;
