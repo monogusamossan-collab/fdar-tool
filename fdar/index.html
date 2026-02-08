@@ -13,50 +13,25 @@
       max-width: 860px;
       line-height: 1.45;
     }
-    h1{
-      font-size: 22px;
-      margin: 0 0 8px;
-      letter-spacing: .2px;
-    }
-    .sub{
-      margin: 0 0 14px;
-      opacity: .8;
-      font-size: 13px;
-    }
+    h1{ font-size: 22px; margin: 0 0 8px; letter-spacing: .2px; }
+    .sub{ margin: 0 0 14px; opacity: .8; font-size: 13px; }
     .card{
       border: 1px solid rgba(127,127,127,.35);
       border-radius: 16px;
       padding: 14px;
       background: rgba(127,127,127,.10);
     }
-    .modeRow{
-      display:flex;
-      gap:10px;
-      margin-bottom: 12px;
-    }
+    .modeRow{ display:flex; gap:10px; margin-bottom: 12px; }
     .modeBtn{
-      flex:1;
-      text-align:left;
-      padding:14px 14px;
-      border-radius:16px;
-      border:1px solid rgba(127,127,127,.35);
-      background: rgba(127,127,127,.10);
-      cursor:pointer;
-      user-select:none;
+      flex:1; text-align:left; padding:14px 14px; border-radius:16px;
+      border:1px solid rgba(127,127,127,.35); background: rgba(127,127,127,.10);
+      cursor:pointer; user-select:none;
     }
-    .modeBtn.active{
-      background: rgba(100,160,255,.18);
-      border-color: rgba(100,160,255,.45);
-    }
+    .modeBtn.active{ background: rgba(100,160,255,.18); border-color: rgba(100,160,255,.45); }
     .modeTitle{ font-weight: 700; margin-bottom: 4px; }
     .modeDesc{ font-size: 12px; opacity: .85; }
 
-    label{
-      display:block;
-      font-size: 13px;
-      opacity: .9;
-      margin: 14px 0 6px;
-    }
+    label{ display:block; font-size: 13px; opacity: .9; margin: 14px 0 6px; }
     input, textarea{
       width: 100%;
       max-width: 100%;
@@ -74,19 +49,13 @@
       text-align: center;
       font-size: 18px;
       letter-spacing: .5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    textarea{
-      height: 86px;
-      resize: vertical;
-      line-height: 1.35;
-    }
+    textarea{ height: 86px; resize: vertical; line-height: 1.35; }
 
-    .btnRow{
-      display:flex;
-      gap:10px;
-      flex-wrap: wrap;
-      margin-top: 14px;
-    }
+    .btnRow{ display:flex; gap:10px; flex-wrap: wrap; margin-top: 14px; align-items:center; }
     button{
       border-radius: 14px;
       border: 1px solid rgba(127,127,127,.35);
@@ -113,20 +82,10 @@
       text-align:center;
     }
 
-    .help{
-      margin-top: 12px;
-      font-size: 13px;
-      opacity: .85;
-      line-height: 1.55;
-    }
+    .help{ margin-top: 12px; font-size: 13px; opacity: .85; line-height: 1.55; }
     .help b{ opacity: 1; }
 
-    .outTitle{
-      margin: 16px 0 8px;
-      font-size: 14px;
-      opacity: .9;
-      font-weight: 700;
-    }
+    .outTitle{ margin: 16px 0 8px; font-size: 14px; opacity: .9; font-weight: 700; }
     pre{
       white-space: pre-wrap;
       word-break: break-word;
@@ -154,9 +113,7 @@
       font-size: 15px;
       box-shadow: 0 10px 26px rgba(0,0,0,.25);
     }
-    .micBtn.listening{
-      background: rgba(170,0,0,.80);
-    }
+    .micBtn.listening{ background: rgba(170,0,0,.80); }
   </style>
 </head>
 <body>
@@ -220,10 +177,10 @@
     <div class="help">
       <div><b>音声ルール</b></div>
       <div>1) 右下の <b>音声開始</b> → すぐに「<b>開始</b>」</div>
-      <div>2) 「<b>A様</b>」のように利用者を言う（以後、その利用者のカルテとして入力）</div>
-      <div>3) 「<b>F、◯◯</b>」「<b>D、◯◯</b>」「<b>A、◯◯</b>」「<b>R、◯◯</b>」で自動振替（SOAPは S/O/A/P）</div>
+      <div>2) 「<b>A様</b>」のように利用者を言う</div>
+      <div>3) 「<b>F、◯◯</b>」「<b>D、◯◯</b>」「<b>A、◯◯</b>」「<b>R、◯◯</b>」（SOAPは S/O/A/P）</div>
       <div>4) 「<b>終了</b>」で入力完了（生成→コピー）</div>
-      <div style="margin-top:6px; opacity:.85;">※「エフ」「ディー」などの言い方も吸収します。項目を言わずに話した場合は、最後に指定した項目へ入ります。</div>
+      <div style="margin-top:6px; opacity:.85;">※「エフ」「ディー」なども吸収。項目なしの発話は最後の項目へ入ります。</div>
     </div>
 
     <div class="outTitle">出力（プレビュー）</div>
@@ -235,6 +192,9 @@
 <script>
 (() => {
   const $ = (id)=>document.getElementById(id);
+
+  // ★ここを自分の Worker URL に差し替え（例：https://xxx.yyy.workers.dev/transcribe）
+  const TRANSCRIBE_ENDPOINT = "https://YOUR-WORKER-URL/transcribe";
 
   // ====== 日付（自動） ======
   function pad2(n){ return String(n).padStart(2,'0'); }
@@ -255,25 +215,23 @@
     $('btnSOAP').classList.toggle('active', mode==='SOAP');
     $('panelFDAR').style.display = (mode==='FDAR') ? '' : 'none';
     $('panelSOAP').style.display = (mode==='SOAP') ? '' : 'none';
+    lastSection = null;
     render();
   }
   $('btnFDAR').addEventListener('click', ()=>setMode('FDAR'));
   $('btnSOAP').addEventListener('click', ()=>setMode('SOAP'));
 
-  // ====== 状態（音声入力の核） ======
-  let listening = false;
-  let activeClient = '';            // "A様" 等
-  let lastSection = null;           // 'f','d','a','r' / 's','o','a2','p'
-  let rec = null;
+  // ====== 状態 ======
+  let listening = false;   // 「開始」後の入力中
+  let armed = false;       // マイク起動済み（開始待ち）
+  let lastSection = null;  // 最後に入れた欄
 
-  // 「開始」「終了」ワード
-  const START_WORDS = ['開始','はじめ','スタート','start','START'];
-  const END_WORDS   = ['終了','終わり','フィニッシュ','finish','FINISH','stop','STOP'];
+  const START_WORDS = ['開始','はじめ','スタート','start'];
+  const END_WORDS   = ['終了','終わり','フィニッシュ','finish','stop'];
 
-  // 発話の「エフ/ディー/エー/アール」等を吸収
   const JP_TO_SECTION_FDAR = [
     ['F','f'], ['エフ','f'], ['えふ','f'],
-    ['D','d'], ['ディー','d'], ['でぃー','d'], ['でぃ','d'], ['ディ','d'],
+    ['D','d'], ['ディー','d'], ['でぃー','d'], ['ディ','d'], ['でぃ','d'],
     ['A','a'], ['エー','a'], ['えー','a'], ['エイ','a'], ['えい','a'],
     ['R','r'], ['アール','r'], ['あーる','r'],
   ];
@@ -285,22 +243,13 @@
   ];
 
   function normalizeText(t){
-    return (t||'')
-      .replace(/\s+/g,' ')
-      .replace(/　/g,' ')
-      .trim();
+    return (t||'').replace(/\s+/g,' ').replace(/　/g,' ').trim();
   }
-  function isStartWord(t){
-    return START_WORDS.some(w => t === w);
-  }
-  function isEndWord(t){
-    return END_WORDS.some(w => t === w);
-  }
+  function isStartWord(t){ t = t.toLowerCase(); return START_WORDS.some(w => t === w); }
+  function isEndWord(t){ t = t.toLowerCase(); return END_WORDS.some(w => t === w); }
 
-  // 利用者イニシャル: "A様" / "KM" / "K M" / "Ａ様"
   function parseClient(t){
     const x = t.replace(/\s+/g,'').replace(/さま$/,'様');
-    // 1-4文字の英字（全角含む）＋任意の様
     const m = x.match(/^([A-ZＡ-Ｚ]{1,4})様?$/);
     if(!m) return null;
     const raw = m[1].replace(/[Ａ-Ｚ]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0));
@@ -315,53 +264,39 @@
     return null;
   }
 
-  // "F、◯◯" / "エフ、◯◯" / "D: ◯◯" / "P 〇〇" など
   function parseSectionLine(t){
-    // 先頭トークン（全角カンマ/句点/コロンにも対応）
     const m = t.match(/^(.{1,6})[、,:\uFF1A]\s*(.+)$/);
     if(m){
       const head = normalizeText(m[1]);
       const body = normalizeText(m[2]);
       const sec = mapSectionToken(head);
-      if(sec && body) return { sec, body };
+      if(sec) return { sec, body };
     }
-    // "F 〇〇" 形式（区切りがスペースのみ）
     const m2 = t.match(/^(.{1,6})\s+(.+)$/);
     if(m2){
       const head = normalizeText(m2[1]);
       const body = normalizeText(m2[2]);
       const sec = mapSectionToken(head);
-      if(sec && body) return { sec, body };
+      if(sec) return { sec, body };
     }
-    // "F" だけ（セクション切替）
     const secOnly = mapSectionToken(t);
     if(secOnly) return { sec: secOnly, body: '' };
     return null;
   }
 
+  function firstSectionId(){
+    return (mode==='FDAR') ? 'f' : 's';
+  }
+  function defaultTarget(){
+    return lastSection || firstSectionId();
+  }
   function appendToField(fieldId, text){
     const el = $(fieldId);
-    if(!el) return;
-    if(!text) return;
+    if(!el || !text) return;
     const cur = (el.value || '').trimEnd();
     el.value = cur ? (cur + '\n' + text) : text;
     lastSection = fieldId;
     render();
-  }
-
-  function setClient(name){
-    activeClient = name;
-    $('client').value = name;
-    render();
-  }
-
-  function firstSectionId(){
-    return (mode==='FDAR') ? 'f' : 's';
-  }
-
-  // 「項目を言わずに話した」場合の投入先
-  function defaultTarget(){
-    return lastSection || firstSectionId();
   }
 
   // ====== 出力生成 ======
@@ -376,10 +311,10 @@
       return [
         dateISO,
         client ? `利用者：${client}` : '',
-        f ? `F：${f}` : 'F：',
-        d ? `D：${d}` : 'D：',
-        a ? `A：${a}` : 'A：',
-        r ? `R：${r}` : 'R：',
+        `F：${f}`,
+        `D：${d}`,
+        `A：${a}`,
+        `R：${r}`,
       ].filter(Boolean).join('\n');
     } else {
       const s = normalizeText($('s').value);
@@ -389,27 +324,21 @@
       return [
         dateISO,
         client ? `利用者：${client}` : '',
-        s ? `S：${s}` : 'S：',
-        o ? `O：${o}` : 'O：',
-        a2 ? `A：${a2}` : 'A：',
-        p ? `P：${p}` : 'P：',
+        `S：${s}`,
+        `O：${o}`,
+        `A：${a2}`,
+        `P：${p}`,
       ].filter(Boolean).join('\n');
     }
   }
-
-  function render(){
-    $('out').textContent = buildText();
-  }
+  function render(){ $('out').textContent = buildText(); }
   render();
 
-  // ====== クリップボード ======
+  // ====== コピー ======
   async function copyText(text){
     try{
       await navigator.clipboard.writeText(text);
-      $('status').textContent = 'コピー完了';
-      setTimeout(()=> $('status').textContent = listening ? '音声入力中' : '待機中', 900);
     }catch(_){
-      // iOSなどで失敗する場合のフォールバック
       const ta = document.createElement('textarea');
       ta.value = text;
       ta.style.position = 'fixed';
@@ -418,9 +347,9 @@
       ta.select();
       document.execCommand('copy');
       ta.remove();
-      $('status').textContent = 'コピー完了';
-      setTimeout(()=> $('status').textContent = listening ? '音声入力中' : '待機中', 900);
     }
+    $('status').textContent = 'コピー完了';
+    setTimeout(()=> $('status').textContent = listening ? '音声入力中' : (armed ? '開始待ち' : '待機中'), 900);
   }
 
   $('buildCopy').addEventListener('click', async ()=>{
@@ -430,141 +359,148 @@
 
   $('clearAll').addEventListener('click', ()=>{
     $('client').value = '';
-    activeClient = '';
     lastSection = null;
     if(mode==='FDAR'){
       $('f').value=''; $('d').value=''; $('a').value=''; $('r').value='';
     }else{
       $('s').value=''; $('o').value=''; $('a2').value=''; $('p').value='';
     }
-    $('status').textContent = '待機中';
+    $('status').textContent = armed ? '開始待ち' : '待機中';
     render();
   });
 
-  // ====== 音声認識 ======
-  function getSR(){
-    return window.SpeechRecognition || window.webkitSpeechRecognition || null;
-  }
+  // ====== 文字起こし（録音→サーバ） ======
+  let stream = null;
+  let mr = null;
+  let chunks = [];
 
-  function ensureRec(){
-    if(rec) return rec;
-    const SR = getSR();
-    if(!SR) return null;
+  async function armMic(){
+    // iPhoneは「ユーザー操作に紐づく getUserMedia」が必須
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mr = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+    chunks = [];
+    mr.ondataavailable = (e)=>{ if(e.data && e.data.size>0) chunks.push(e.data); };
+    mr.onstop = async ()=>{
+      try{
+        $('status').textContent = '解析中';
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        chunks = [];
 
-    rec = new SR();
-    rec.lang = 'ja-JP';
-    rec.continuous = true;
-    rec.interimResults = false;
+        const fd = new FormData();
+        fd.append('file', blob, 'audio.webm');
+        fd.append('lang', 'ja');
 
-    rec.onresult = (e)=>{
-      // 最新結果のみ拾う
-      const res = e.results[e.results.length - 1];
-      if(!res || !res[0]) return;
-      const raw = res[0].transcript;
-      const t = normalizeText(raw);
+        const res = await fetch(TRANSCRIBE_ENDPOINT, { method:'POST', body: fd });
+        if(!res.ok) throw new Error('transcribe failed');
+        const data = await res.json();
+        const t = normalizeText(data.text || '');
 
-      if(!t) return;
-
-      // 開始/終了
-      if(isStartWord(t)){
-        listening = true;
-        $('mic').classList.add('listening');
-        $('mic').textContent = '⛔ 音声停止';
-        $('status').textContent = '音声入力中';
-        lastSection = firstSectionId(); // 開始したら最初の項目にセット
-        return;
-      }
-      if(isEndWord(t)){
-        // 終了で止めてコピーまで
-        stopListening();
-        render();
-        copyText($('out').textContent);
-        return;
-      }
-
-      // 利用者イニシャル
-      const c = parseClient(t);
-      if(c){
-        setClient(c);
-        // 利用者を言ったら、次は最初の項目へ
-        lastSection = firstSectionId();
-        return;
-      }
-
-      // 項目行
-      const secLine = parseSectionLine(t);
-      if(secLine){
-        if(secLine.body){
-          appendToField(secLine.sec, secLine.body);
-        }else{
-          // "F" だけで切替
-          lastSection = secLine.sec;
-          $('status').textContent = '音声入力中';
-        }
-        return;
-      }
-
-      // 何も指定がなければ「最後の項目」へ入れる
-      appendToField(defaultTarget(), t);
-    };
-
-    rec.onerror = (_e)=>{
-      $('status').textContent = '音声エラー';
-      setTimeout(()=> $('status').textContent = listening ? '音声入力中' : '待機中', 1200);
-    };
-
-    rec.onend = ()=>{
-      // iOS等で勝手に切れた時、入力中なら再開
-      if(listening){
-        try{ rec.start(); }catch(_){}
+        if(t) handleTranscript(t);
+        $('status').textContent = listening ? '音声入力中' : '開始待ち';
+      }catch(_){
+        $('status').textContent = '音声エラー';
+        setTimeout(()=> $('status').textContent = listening ? '音声入力中' : (armed ? '開始待ち' : '待機中'), 1200);
       }
     };
 
-    return rec;
+    armed = true;
+    $('status').textContent = '開始待ち';
   }
 
-  function startListening(){
-    const SR = getSR();
-    if(!SR){
-      $('status').textContent = 'このブラウザは音声入力非対応';
-      return;
-    }
-    ensureRec();
-    try{
-      // ボタンを押した直後に start する（ユーザー操作に紐づける）
-      rec.start();
-      $('status').textContent = '待機中';
-      // ここでは「開始」を待つ（誤入力防止）
-    }catch(_){}
-  }
-
-  function stopListening(){
+  function disarmMic(){
+    armed = false;
     listening = false;
     $('mic').classList.remove('listening');
     $('mic').textContent = '🎙️ 音声開始';
     $('status').textContent = '待機中';
-    try{ rec && rec.stop(); }catch(_){}
+    try{ mr && mr.state !== 'inactive' && mr.stop(); }catch(_){}
+    try{ stream && stream.getTracks().forEach(t=>t.stop()); }catch(_){}
+    stream = null; mr = null; chunks = [];
   }
 
-  const micHandler = ()=>{
-  // 「起動」→「開始」待ち か、入力中→停止
-  if(listening){
-    stopListening();
-    return;
+  function startUtteranceCapture(){
+    if(!armed || !mr) return;
+    if(mr.state === 'recording') return;
+    chunks = [];
+    mr.start();
+    // 2.8秒で1フレーズとして確定（運用で調整）
+    setTimeout(()=>{
+      try{ if(mr && mr.state === 'recording') mr.stop(); }catch(_){}
+    }, 2800);
   }
-  startListening();
-};
 
-// iPhone対策：click だけだと拾えない事がある
-$('mic').addEventListener('pointerdown', micHandler);
-$('mic').addEventListener('touchstart', micHandler, { passive: true });
+  // ====== 解析ルール（開始→利用者→F/D/A/R→終了） ======
+  function handleTranscript(t){
+    // 開始/終了
+    if(isStartWord(t)){
+      listening = true;
+      $('mic').classList.add('listening');
+      $('mic').textContent = '⛔ 音声停止';
+      $('status').textContent = '音声入力中';
+      lastSection = firstSectionId();
+      return;
+    }
+    if(isEndWord(t)){
+      listening = false;
+      $('mic').classList.remove('listening');
+      $('mic').textContent = '🎙️ 音声開始';
+      $('status').textContent = '開始待ち';
+      render();
+      copyText($('out').textContent);
+      return;
+    }
 
+    // 利用者
+    const c = parseClient(t);
+    if(c){
+      $('client').value = c;
+      lastSection = firstSectionId();
+      render();
+      return;
+    }
 
-  // 入力が手打ちでもプレビュー更新
-  ['client','f','d','a','r','s','o','a2','p'].forEach(id=>{
-    const el = $(id);
-    if(!el) return;
-    el.addEventListener('input', render);
+    // 項目行
+    const secLine = parseSectionLine(t);
+    if(secLine){
+      if(secLine.body){
+        appendToField(secLine.sec, secLine.body);
+      }else{
+        lastSection = secLine.sec;
+        $('status').textContent = '音声入力中';
+      }
+      return;
+    }
+
+    // それ以外は最後の欄へ
+    appendToField(defaultTarget(), t);
+  }
+
+  // ====== マイクボタンの挙動 ======
+  $('mic').addEventListener('click', async ()=>{
+    // 1回目：起動（開始待ち）
+    if(!armed){
+      try{
+        $('status').textContent = 'マイク許可中';
+        await armMic();
+      }catch(_){
+        $('status').textContent = 'マイク許可が必要';
+        setTimeout(()=> $('status').textContent = '待機中', 1200);
+      }
+      return;
+    }
+
+    // 起動済み：発話キャプチャ（または停止）
+    if(listening){
+      // 入力中に押したら停止（安全）
+      listening = false;
+      $('mic').classList.remove('listening');
+      $('mic').textContent = '🎙️ 音声開始';
+      $('status').textContent = '開始待ち';
+      return;
+    }
+
+    // 開始待ち状態：押す→短時間録音→文字起こし→「開始」などのコマンドを拾う
+    startUtteranceCapture();
   });
 
 })();
