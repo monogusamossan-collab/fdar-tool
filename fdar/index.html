@@ -2,95 +2,144 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>FDAR 自動記録メーカー</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>FDAR・SOAP 自動記録メーカー</title>
   <style>
     :root { color-scheme: light dark; }
-
     body{
-      font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
-      margin:0; padding:18px;
-      max-width:860px;
-      line-height:1.45;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 18px;
+      max-width: 860px;
+      line-height: 1.45;
     }
-    h1{ font-size:22px; margin:0 0 8px; }
-    .subTitle{ margin:0 0 14px; opacity:.85; font-size:14px; }
-
+    h1{
+      font-size: 22px;
+      margin: 0 0 8px;
+      letter-spacing: .2px;
+    }
+    .sub{
+      margin: 0 0 14px;
+      opacity: .8;
+      font-size: 13px;
+    }
     .card{
-      border:1px solid rgba(127,127,127,.35);
-      border-radius:16px;
-      padding:14px;
+      border: 1px solid rgba(127,127,127,.35);
+      border-radius: 16px;
+      padding: 14px;
       background: rgba(127,127,127,.10);
     }
-
-    label{ display:block; font-size:13px; opacity:.9; margin:10px 0 6px; }
-
-    input, textarea{
-      width:100%;
-      max-width:100%;
-      box-sizing:border-box;
-      font-size:16px;          /* iPhoneで拡大/崩れ防止の基本 */
-      border:1px solid rgba(127,127,127,.35);
-      border-radius:12px;
-      padding:12px;
-      background: rgba(127,127,127,.12);
-      color: inherit;
-      outline:none;
-    }
-    textarea{
-      min-height:84px;
-      resize: vertical;
-    }
-
-    /* 日付がはみ出る対策（iPhone） */
-    input[type="date"]{
-      -webkit-appearance: none;
-      appearance: none;
-      display:block;
-      line-height:1.2;
-      padding:12px;
-    }
-
-    .row{
+    .modeRow{
       display:flex;
       gap:10px;
-      flex-wrap:wrap;
+      margin-bottom: 12px;
     }
-    .row > div{
-      flex:1 1 220px;
-      min-width:220px;
-    }
-
-    .btns{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:12px;
-    }
-    button{
+    .modeBtn{
+      flex:1;
+      text-align:left;
+      padding:14px 14px;
+      border-radius:16px;
       border:1px solid rgba(127,127,127,.35);
-      border-radius:12px;
-      padding:12px 14px;
-      font-size:16px;
-      background: rgba(127,127,127,.12);
-      color: inherit;
+      background: rgba(127,127,127,.10);
+      cursor:pointer;
+      user-select:none;
     }
-    button.primary{
-      background: rgba(100,160,255,.25);
+    .modeBtn.active{
+      background: rgba(100,160,255,.18);
       border-color: rgba(100,160,255,.45);
     }
+    .modeTitle{ font-weight: 700; margin-bottom: 4px; }
+    .modeDesc{ font-size: 12px; opacity: .85; }
 
-    .badge{
-      display:inline-block;
-      padding:10px 12px;
-      border-radius:999px;
-      border:1px solid rgba(127,127,127,.35);
+    label{
+      display:block;
+      font-size: 13px;
+      opacity: .9;
+      margin: 14px 0 6px;
+    }
+    input, textarea{
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      font-size: 16px;
+      display:block;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(127,127,127,.35);
       background: rgba(127,127,127,.12);
-      font-size:14px;
+      color: inherit;
+      outline: none;
+    }
+    input{
+      text-align: center;
+      font-size: 18px;
+      letter-spacing: .5px;
+    }
+    textarea{
+      height: 86px;
+      resize: vertical;
+      line-height: 1.35;
     }
 
-    /* 右下マイクボタン（押せない問題の対策込み） */
+    .btnRow{
+      display:flex;
+      gap:10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    button{
+      border-radius: 14px;
+      border: 1px solid rgba(127,127,127,.35);
+      background: rgba(127,127,127,.10);
+      color: inherit;
+      padding: 12px 14px;
+      font-size: 16px;
+      cursor: pointer;
+      user-select: none;
+    }
+    button.primary{
+      background: rgba(100,160,255,.22);
+      border-color: rgba(100,160,255,.45);
+      font-weight: 700;
+    }
+    .badge{
+      display:inline-block;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(127,127,127,.35);
+      background: rgba(127,127,127,.12);
+      font-size: 14px;
+      min-width: 86px;
+      text-align:center;
+    }
+
+    .help{
+      margin-top: 12px;
+      font-size: 13px;
+      opacity: .85;
+      line-height: 1.55;
+    }
+    .help b{ opacity: 1; }
+
+    .outTitle{
+      margin: 16px 0 8px;
+      font-size: 14px;
+      opacity: .9;
+      font-weight: 700;
+    }
+    pre{
+      white-space: pre-wrap;
+      word-break: break-word;
+      border-radius: 16px;
+      border: 1px solid rgba(127,127,127,.35);
+      background: rgba(127,127,127,.10);
+      padding: 14px;
+      margin: 0 0 18px;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    /* 右下マイクボタン */
     .micBtn{
       position: fixed;
       right: 14px;
@@ -99,222 +148,421 @@
       pointer-events: auto;
       border-radius: 999px;
       padding: 14px 16px;
+      border: 1px solid rgba(127,127,127,.35);
       background: rgba(0,0,0,.80);
       color: #fff;
-      border: 1px solid rgba(255,255,255,.18);
       font-size: 15px;
-      box-shadow: 0 6px 18px rgba(0,0,0,.22);
+      box-shadow: 0 10px 26px rgba(0,0,0,.25);
     }
-
-    .preview{
-      margin-top:12px;
-      padding:12px;
-      border-radius:12px;
-      border:1px solid rgba(127,127,127,.35);
-      background: rgba(127,127,127,.08);
-      white-space:pre-wrap;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 14px;
+    .micBtn.listening{
+      background: rgba(170,0,0,.80);
     }
   </style>
 </head>
-
 <body>
-  <h1>FDAR 自動記録メーカー</h1>
-  <p class="subTitle">入力して「コード化してコピー」でFDAR形式に整形してクリップボードへ送ります。</p>
+  <h1>FDAR・SOAP 自動記録メーカー</h1>
+  <p class="sub">音声で「開始」→「A様」→「F、…」→…→「終了」。生成された文章をコピーして貼り付けます。</p>
 
   <div class="card">
-    <div class="row">
-      <div>
-        <label for="client">利用者（イニシャル推奨）</label>
-        <input id="client" placeholder="例：A様 / KM など（個人が特定できる情報は避けてください）" />
+    <div class="modeRow">
+      <div id="btnFDAR" class="modeBtn active" role="button" tabindex="0">
+        <div class="modeTitle">FDAR版</div>
+        <div class="modeDesc">利用者→（F/D/A/R）→文章生成→コピー</div>
       </div>
-      <div>
-        <label for="date">日付</label>
-        <input id="date" type="date" />
+      <div id="btnSOAP" class="modeBtn" role="button" tabindex="0">
+        <div class="modeTitle">SOAP版</div>
+        <div class="modeDesc">利用者→（S/O/A/P）→文章生成→コピー</div>
       </div>
     </div>
 
-    <label for="f">F（Focus）</label>
-    <textarea id="f" placeholder="例：本日の焦点、課題、主訴など"></textarea>
+    <label for="client">利用者（イニシャル推奨）</label>
+    <input id="client" placeholder="例：A様 / KM など（個人が特定できる情報は入れない）" />
 
-    <label for="d">D（Data）</label>
-    <textarea id="d" placeholder="例：バイタル、所見、動作、観察など"></textarea>
+    <label for="date">日付（自動）</label>
+    <input id="date" />
 
-    <label for="a">A（Action）</label>
-    <textarea id="a" placeholder="例：実施内容、介入、指導など"></textarea>
+    <!-- FDAR fields -->
+    <div id="panelFDAR">
+      <label for="f">F（Focus）</label>
+      <textarea id="f" placeholder="例：本日の焦点、課題、主訴など"></textarea>
 
-    <label for="r">R（Response）</label>
-    <textarea id="r" placeholder="例：反応、変化、評価など"></textarea>
+      <label for="d">D（Data）</label>
+      <textarea id="d" placeholder="例：バイタル、所見、動作、観察など"></textarea>
 
-    <div class="btns">
-      <button class="primary" id="copy">コード化してコピー</button>
-      <button id="clear">全消去</button>
-      <span class="badge" id="status">待機中</span>
+      <label for="a">A（Action）</label>
+      <textarea id="a" placeholder="例：実施内容、介入、指導など"></textarea>
+
+      <label for="r">R（Response）</label>
+      <textarea id="r" placeholder="例：反応、変化、評価など"></textarea>
     </div>
 
-    <div class="preview" id="preview"></div>
+    <!-- SOAP fields -->
+    <div id="panelSOAP" style="display:none;">
+      <label for="s">S（Subjective）</label>
+      <textarea id="s" placeholder="例：主観情報、訴えなど"></textarea>
+
+      <label for="o">O（Objective）</label>
+      <textarea id="o" placeholder="例：客観所見、バイタル、動作など"></textarea>
+
+      <label for="a2">A（Assessment）</label>
+      <textarea id="a2" placeholder="例：評価、解釈など"></textarea>
+
+      <label for="p">P（Plan）</label>
+      <textarea id="p" placeholder="例：方針、次回、指導など"></textarea>
+    </div>
+
+    <div class="btnRow">
+      <button id="buildCopy" class="primary">コード化してコピー</button>
+      <button id="clearAll">全消去</button>
+      <span id="status" class="badge">待機中</span>
+    </div>
+
+    <div class="help">
+      <div><b>音声ルール</b></div>
+      <div>1) 右下の <b>音声開始</b> → すぐに「<b>開始</b>」</div>
+      <div>2) 「<b>A様</b>」のように利用者を言う（以後、その利用者のカルテとして入力）</div>
+      <div>3) 「<b>F、◯◯</b>」「<b>D、◯◯</b>」「<b>A、◯◯</b>」「<b>R、◯◯</b>」で自動振替（SOAPは S/O/A/P）</div>
+      <div>4) 「<b>終了</b>」で入力完了（生成→コピー）</div>
+      <div style="margin-top:6px; opacity:.85;">※「エフ」「ディー」などの言い方も吸収します。項目を言わずに話した場合は、最後に指定した項目へ入ります。</div>
+    </div>
+
+    <div class="outTitle">出力（プレビュー）</div>
+    <pre id="out"></pre>
   </div>
 
-  <button class="micBtn" id="mic">🎙 音声開始</button>
+  <button id="mic" class="micBtn" type="button">🎙️ 音声開始</button>
 
-  <script>
-    // 初期日付（空なら今日）
-    (function initDate(){
-      const el = document.getElementById('date');
-      if (!el.value) {
-        const d = new Date();
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth()+1).padStart(2,'0');
-        const dd = String(d.getDate()).padStart(2,'0');
-        el.value = `${yyyy}-${mm}-${dd}`;
-      }
-    })();
+<script>
+(() => {
+  const $ = (id)=>document.getElementById(id);
 
-    const $ = (id)=>document.getElementById(id);
+  // ====== 日付（自動） ======
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function todayYMD(slash=true){
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = pad2(d.getMonth()+1);
+    const dd = pad2(d.getDate());
+    return slash ? `${y}/${m}/${dd}` : `${y}-${m}-${dd}`;
+  }
+  $('date').value = todayYMD(true);
 
-    // ===== 最後に触った入力欄を覚える（iPhone対策：pointerdownも拾う） =====
-    // ===== 最後に触った入力欄を覚える（iPhone対策） =====
-let lastFieldId = null;
-const targetIds = ['f','d','a','r'];
-
-function isTargetId(id){
-  return targetIds.includes(id);
-}
-
-function getFocusedTargetId(){
-  const ae = document.activeElement;
-  if (ae && isTargetId(ae.id)) return ae.id;
-  return null;
-}
-
-targetIds.forEach((id)=>{
-  const el = document.getElementById(id);
-  if(!el) return;
-
-  const set = ()=>{ lastFieldId = id; };
-
-  el.addEventListener('pointerdown', set, {capture:true});
-  el.addEventListener('touchstart',  set, {capture:true});
-  el.addEventListener('mousedown',   set, {capture:true});
-  el.addEventListener('focusin',     set, {capture:true});
-});
-    // ===== FDAR整形 =====
-    function buildText(){
-      const client = $('client').value.trim();
-      const date = $('date').value ? $('date').value : '';
-      const f = $('f').value.trim();
-      const d = $('d').value.trim();
-      const a = $('a').value.trim();
-      const r = $('r').value.trim();
-
-      const head = `${date}${client ? ' / ' + client : ''}`.trim();
-      const lines = [];
-      if (head) lines.push(head);
-      lines.push(`F：${f}`);
-      lines.push(`D：${d}`);
-      lines.push(`A：${a}`);
-      lines.push(`R：${r}`);
-      return lines.join('\n');
-    }
-
-    function render(){
-      $('preview').textContent = buildText();
-    }
-    ['client','date','f','d','a','r'].forEach(id=>{
-      const el = $(id);
-      if(!el) return;
-      el.addEventListener('input', render);
-    });
+  // ====== モード切替 ======
+  let mode = 'FDAR'; // FDAR | SOAP
+  function setMode(m){
+    mode = m;
+    $('btnFDAR').classList.toggle('active', mode==='FDAR');
+    $('btnSOAP').classList.toggle('active', mode==='SOAP');
+    $('panelFDAR').style.display = (mode==='FDAR') ? '' : 'none';
+    $('panelSOAP').style.display = (mode==='SOAP') ? '' : 'none';
     render();
+  }
+  $('btnFDAR').addEventListener('click', ()=>setMode('FDAR'));
+  $('btnSOAP').addEventListener('click', ()=>setMode('SOAP'));
 
-    // ===== クリップボード =====
-    $('copy').addEventListener('click', async ()=>{
-      try{
-        await navigator.clipboard.writeText(buildText());
-        $('status').textContent = 'コピーしました';
-        setTimeout(()=> $('status').textContent = '待機中', 1200);
-      }catch(e){
-        $('status').textContent = 'コピー失敗（権限/ブラウザ）';
-      }
-    });
+  // ====== 状態（音声入力の核） ======
+  let listening = false;
+  let activeClient = '';            // "A様" 等
+  let lastSection = null;           // 'f','d','a','r' / 's','o','a2','p'
+  let rec = null;
 
-    $('clear').addEventListener('click', ()=>{
-      ['client','f','d','a','r'].forEach(id=> $(id).value = '');
-      render();
-      $('status').textContent = '全消去';
-      setTimeout(()=> $('status').textContent = '待機中', 1200);
-    });
+  // 「開始」「終了」ワード
+  const START_WORDS = ['開始','はじめ','スタート','start','START'];
+  const END_WORDS   = ['終了','終わり','フィニッシュ','finish','FINISH','stop','STOP'];
 
-    // ===== 音声入力 =====
-    let rec = null;
-    let listening = false;
+  // 発話の「エフ/ディー/エー/アール」等を吸収
+  const JP_TO_SECTION_FDAR = [
+    ['F','f'], ['エフ','f'], ['えふ','f'],
+    ['D','d'], ['ディー','d'], ['でぃー','d'], ['でぃ','d'], ['ディ','d'],
+    ['A','a'], ['エー','a'], ['えー','a'], ['エイ','a'], ['えい','a'],
+    ['R','r'], ['アール','r'], ['あーる','r'],
+  ];
+  const JP_TO_SECTION_SOAP = [
+    ['S','s'], ['エス','s'], ['えす','s'],
+    ['O','o'], ['オー','o'], ['おー','o'],
+    ['A','a2'], ['エー','a2'], ['えー','a2'], ['エイ','a2'], ['えい','a2'],
+    ['P','p'], ['ピー','p'], ['ぴー','p'],
+  ];
 
-    function getSR(){
-      return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  function normalizeText(t){
+    return (t||'')
+      .replace(/\s+/g,' ')
+      .replace(/　/g,' ')
+      .trim();
+  }
+  function isStartWord(t){
+    return START_WORDS.some(w => t === w);
+  }
+  function isEndWord(t){
+    return END_WORDS.some(w => t === w);
+  }
+
+  // 利用者イニシャル: "A様" / "KM" / "K M" / "Ａ様"
+  function parseClient(t){
+    const x = t.replace(/\s+/g,'').replace(/さま$/,'様');
+    // 1-4文字の英字（全角含む）＋任意の様
+    const m = x.match(/^([A-ZＡ-Ｚ]{1,4})様?$/);
+    if(!m) return null;
+    const raw = m[1].replace(/[Ａ-Ｚ]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0));
+    return raw + '様';
+  }
+
+  function mapSectionToken(token){
+    const map = (mode==='FDAR') ? JP_TO_SECTION_FDAR : JP_TO_SECTION_SOAP;
+    for(const [k,v] of map){
+      if(token === k) return v;
     }
+    return null;
+  }
 
-    function ensureRec(){
-      if (rec) return rec;
-      const SR = getSR();
-      if (!SR) return null;
-
-      rec = new SR();
-      rec.lang = 'ja-JP';
-      rec.interimResults = true;
-      rec.continuous = true;
-
-      rec.onresult = (e)=>{
-        let text = '';
-        for(let i=e.resultIndex;i<e.results.length;i++){
-          text += e.results[i][0].transcript;
-        }
-        text = (text || '').trim();
-        if(!text) return;
-
-        const id = getTargetFieldId();
-        const el = $(id);
-        el.value = (el.value + (el.value ? '\n' : '') + text);
-        render();
-      };
-
-      rec.onend = ()=>{
-        if(listening){
-          try{ rec.start(); }catch(_){}
-        }
-      };
-
-      rec.onerror = ()=>{
-        $('status').textContent = '音声エラー';
-        listening = false;
-        $('mic').textContent = '🎙 音声開始';
-        setTimeout(()=> $('status').textContent = '待機中', 1200);
-      };
-
-      return rec;
+  // "F、◯◯" / "エフ、◯◯" / "D: ◯◯" / "P 〇〇" など
+  function parseSectionLine(t){
+    // 先頭トークン（全角カンマ/句点/コロンにも対応）
+    const m = t.match(/^(.{1,6})[、,:\uFF1A]\s*(.+)$/);
+    if(m){
+      const head = normalizeText(m[1]);
+      const body = normalizeText(m[2]);
+      const sec = mapSectionToken(head);
+      if(sec && body) return { sec, body };
     }
+    // "F 〇〇" 形式（区切りがスペースのみ）
+    const m2 = t.match(/^(.{1,6})\s+(.+)$/);
+    if(m2){
+      const head = normalizeText(m2[1]);
+      const body = normalizeText(m2[2]);
+      const sec = mapSectionToken(head);
+      if(sec && body) return { sec, body };
+    }
+    // "F" だけ（セクション切替）
+    const secOnly = mapSectionToken(t);
+    if(secOnly) return { sec: secOnly, body: '' };
+    return null;
+  }
 
-    $('mic').addEventListener('click', ()=>{
-      const SR = getSR();
-      if(!SR){
-        $('status').textContent = 'このブラウザは音声入力非対応';
+  function appendToField(fieldId, text){
+    const el = $(fieldId);
+    if(!el) return;
+    if(!text) return;
+    const cur = (el.value || '').trimEnd();
+    el.value = cur ? (cur + '\n' + text) : text;
+    lastSection = fieldId;
+    render();
+  }
+
+  function setClient(name){
+    activeClient = name;
+    $('client').value = name;
+    render();
+  }
+
+  function firstSectionId(){
+    return (mode==='FDAR') ? 'f' : 's';
+  }
+
+  // 「項目を言わずに話した」場合の投入先
+  function defaultTarget(){
+    return lastSection || firstSectionId();
+  }
+
+  // ====== 出力生成 ======
+  function buildText(){
+    const dateISO = todayYMD(false);
+    const client = normalizeText($('client').value);
+    if(mode==='FDAR'){
+      const f = normalizeText($('f').value);
+      const d = normalizeText($('d').value);
+      const a = normalizeText($('a').value);
+      const r = normalizeText($('r').value);
+      return [
+        dateISO,
+        client ? `利用者：${client}` : '',
+        f ? `F：${f}` : 'F：',
+        d ? `D：${d}` : 'D：',
+        a ? `A：${a}` : 'A：',
+        r ? `R：${r}` : 'R：',
+      ].filter(Boolean).join('\n');
+    } else {
+      const s = normalizeText($('s').value);
+      const o = normalizeText($('o').value);
+      const a2 = normalizeText($('a2').value);
+      const p = normalizeText($('p').value);
+      return [
+        dateISO,
+        client ? `利用者：${client}` : '',
+        s ? `S：${s}` : 'S：',
+        o ? `O：${o}` : 'O：',
+        a2 ? `A：${a2}` : 'A：',
+        p ? `P：${p}` : 'P：',
+      ].filter(Boolean).join('\n');
+    }
+  }
+
+  function render(){
+    $('out').textContent = buildText();
+  }
+  render();
+
+  // ====== クリップボード ======
+  async function copyText(text){
+    try{
+      await navigator.clipboard.writeText(text);
+      $('status').textContent = 'コピー完了';
+      setTimeout(()=> $('status').textContent = listening ? '音声入力中' : '待機中', 900);
+    }catch(_){
+      // iOSなどで失敗する場合のフォールバック
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      $('status').textContent = 'コピー完了';
+      setTimeout(()=> $('status').textContent = listening ? '音声入力中' : '待機中', 900);
+    }
+  }
+
+  $('buildCopy').addEventListener('click', async ()=>{
+    render();
+    await copyText($('out').textContent);
+  });
+
+  $('clearAll').addEventListener('click', ()=>{
+    $('client').value = '';
+    activeClient = '';
+    lastSection = null;
+    if(mode==='FDAR'){
+      $('f').value=''; $('d').value=''; $('a').value=''; $('r').value='';
+    }else{
+      $('s').value=''; $('o').value=''; $('a2').value=''; $('p').value='';
+    }
+    $('status').textContent = '待機中';
+    render();
+  });
+
+  // ====== 音声認識 ======
+  function getSR(){
+    return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  }
+
+  function ensureRec(){
+    if(rec) return rec;
+    const SR = getSR();
+    if(!SR) return null;
+
+    rec = new SR();
+    rec.lang = 'ja-JP';
+    rec.continuous = true;
+    rec.interimResults = false;
+
+    rec.onresult = (e)=>{
+      // 最新結果のみ拾う
+      const res = e.results[e.results.length - 1];
+      if(!res || !res[0]) return;
+      const raw = res[0].transcript;
+      const t = normalizeText(raw);
+
+      if(!t) return;
+
+      // 開始/終了
+      if(isStartWord(t)){
+        listening = true;
+        $('mic').classList.add('listening');
+        $('mic').textContent = '⛔ 音声停止';
+        $('status').textContent = '音声入力中';
+        lastSection = firstSectionId(); // 開始したら最初の項目にセット
         return;
       }
-      ensureRec();
-let speechTargetId = 'f';
-      if(!listening){
-        listening = true;
-        $('status').textContent = '音声入力中';
-        $('mic').textContent = '🛑 音声停止';
-        speechTargetId = getFocusedTargetId() || lastFieldId || 'f';
-        try{ rec.start(); }catch(_){}
-      }else{
-        listening = false;
-        $('status').textContent = '待機中';
-        $('mic').textContent = '🎙 音声開始';
-        try{ rec.stop(); }catch(_){}
+      if(isEndWord(t)){
+        // 終了で止めてコピーまで
+        stopListening();
+        render();
+        copyText($('out').textContent);
+        return;
       }
-    });
-  </script>
+
+      // 利用者イニシャル
+      const c = parseClient(t);
+      if(c){
+        setClient(c);
+        // 利用者を言ったら、次は最初の項目へ
+        lastSection = firstSectionId();
+        return;
+      }
+
+      // 項目行
+      const secLine = parseSectionLine(t);
+      if(secLine){
+        if(secLine.body){
+          appendToField(secLine.sec, secLine.body);
+        }else{
+          // "F" だけで切替
+          lastSection = secLine.sec;
+          $('status').textContent = '音声入力中';
+        }
+        return;
+      }
+
+      // 何も指定がなければ「最後の項目」へ入れる
+      appendToField(defaultTarget(), t);
+    };
+
+    rec.onerror = (_e)=>{
+      $('status').textContent = '音声エラー';
+      setTimeout(()=> $('status').textContent = listening ? '音声入力中' : '待機中', 1200);
+    };
+
+    rec.onend = ()=>{
+      // iOS等で勝手に切れた時、入力中なら再開
+      if(listening){
+        try{ rec.start(); }catch(_){}
+      }
+    };
+
+    return rec;
+  }
+
+  function startListening(){
+    const SR = getSR();
+    if(!SR){
+      $('status').textContent = 'このブラウザは音声入力非対応';
+      return;
+    }
+    ensureRec();
+    try{
+      // ボタンを押した直後に start する（ユーザー操作に紐づける）
+      rec.start();
+      $('status').textContent = '待機中';
+      // ここでは「開始」を待つ（誤入力防止）
+    }catch(_){}
+  }
+
+  function stopListening(){
+    listening = false;
+    $('mic').classList.remove('listening');
+    $('mic').textContent = '🎙️ 音声開始';
+    $('status').textContent = '待機中';
+    try{ rec && rec.stop(); }catch(_){}
+  }
+
+  $('mic').addEventListener('click', ()=>{
+    // 「起動」→「開始」待ち か、入力中→停止
+    if(listening){
+      stopListening();
+      return;
+    }
+    startListening();
+  });
+
+  // 入力が手打ちでもプレビュー更新
+  ['client','f','d','a','r','s','o','a2','p'].forEach(id=>{
+    const el = $(id);
+    if(!el) return;
+    el.addEventListener('input', render);
+  });
+
+})();
+</script>
 </body>
 </html>
