@@ -330,6 +330,9 @@
     }
 
     $('mic').addEventListener('click', ()=>{
+       $('status').textContent =
+    'SR=' + (!!(window.SpeechRecognition || window.webkitSpeechRecognition));
+
       const SR = getSR();
       if(!SR){
         $('status').textContent = 'このブラウザは音声入力非対応';
