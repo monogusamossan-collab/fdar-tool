@@ -174,25 +174,31 @@
     const $ = (id)=>document.getElementById(id);
 
     // ===== 最後に触った入力欄を覚える（iPhone対策：pointerdownも拾う） =====
-    let lastFieldId = 'f';
-    const targetIds = ['f','d','a','r'];
+    // ===== 最後に触った入力欄を覚える（iPhone対策） =====
+let lastFieldId = 'f';
+const targetIds = ['f','d','a','r'];
 
-    
-    targetIds.concat(['client','date']).forEach(id=>{
-      const el = $(id);
-      if(!el) return;
-      ['focus','click','pointerdown','touchstart'].forEach(ev=>{
-        el.addEventListener(ev, ()=> setLast(id));
-      });
-    });
+function isTargetId(id){
+  return targetIds.includes(id);
+}
 
-    function getTargetFieldId(){
-      const ae = document.activeElement;
-      if (ae && targetIds.includes(ae.id)) return ae.id;
-      if (targetIds.includes(lastFieldId)) return lastFieldId;
-      return 'f';
-    }
+function getFocusedTargetId(){
+  const ae = document.activeElement;
+  if (ae && isTargetId(ae.id)) return ae.id;
+  return null;
+}
 
+targetIds.forEach((id)=>{
+  const el = document.getElementById(id);
+  if(!el) return;
+
+  const set = ()=>{ lastFieldId = id; };
+
+  el.addEventListener('pointerdown', set, {capture:true});
+  el.addEventListener('touchstart',  set, {capture:true});
+  el.addEventListener('mousedown',   set, {capture:true});
+  el.addEventListener('focusin',     set, {capture:true});
+});
     // ===== FDAR整形 =====
     function buildText(){
       const client = $('client').value.trim();
@@ -295,11 +301,12 @@
         return;
       }
       ensureRec();
-
+let speechTargetId = 'f';
       if(!listening){
         listening = true;
         $('status').textContent = '音声入力中';
         $('mic').textContent = '🛑 音声停止';
+        speechTargetId = getFocusedTargetId() || lastFieldId || 'f';
         try{ rec.start(); }catch(_){}
       }else{
         listening = false;
